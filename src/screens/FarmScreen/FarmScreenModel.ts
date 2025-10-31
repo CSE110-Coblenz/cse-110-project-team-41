@@ -3,12 +3,14 @@
  */
 export class FarmScreenModel {
 	private score = 0;
+	private round = 1;
 
 	/**
 	 * Reset game state for a new game
 	 */
 	reset(): void {
 		this.score = 0;
+		this.round = 1;
 	}
 
 	/**
@@ -23,5 +25,21 @@ export class FarmScreenModel {
 	 */
 	getScore(): number {
 		return this.score;
+	}
+
+	/**
+	 * Increment the round parameter at the end of a round
+	 */
+
+	incrementRound(): void {
+		this.round++;
+	}
+
+	/**
+	 * Get the current round
+	 */
+
+	getRound() : number {
+		return this.round;
 	}
 }
