@@ -1,17 +1,37 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
-import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants.ts";
+import {STAGE_WIDTH, STAGE_HEIGHT, PLANTER_WIDTH} from "../../constants.ts";
+import {FarmPlanterController} from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
+import {EmuController} from "../../components/EmuComponent/EmuController.ts";
 
 /**
  * GameScreenView - Renders the game UI using Konva
  */
 export class FarmScreenView implements View {
 	private group: Konva.Group;
-	private lemonImage: Konva.Image | Konva.Circle | null = null;
+	private player: Konva.Rect | null = null;
 	private scoreText: Konva.Text;
-	private timerText: Konva.Text;
+	private startDayButton: Konva.Text;
+	private registerEmu: (emu: EmuController) => void = null;
 
-	constructor(onLemonClick: () => void) {
+	constructor(
+		handleKeydown: (event: KeyboardEvent) => void,
+		handleKeyup: (event: KeyboardEvent) => void,
+		handleStartDay: () => void,
+		registerEmu: (emu: EmuController) => void,
+		registerPlanter: (planter: FarmPlanterController) => void,
+	) {
+		this.registerEmu = registerEmu;
+
+		window.addEventListener("keydown", (event) => {
+			const keyboardEvent = event as KeyboardEvent;
+			handleKeydown(keyboardEvent);
+		});
+		window.addEventListener("keyup", (event) => {
+			const keyboardEvent = event as KeyboardEvent;
+			handleKeyup(keyboardEvent);
+		});
+
 		this.group = new Konva.Group({ visible: false });
 
 		// Background
@@ -20,9 +40,18 @@ export class FarmScreenView implements View {
 			y: 0,
 			width: STAGE_WIDTH,
 			height: STAGE_HEIGHT,
-			fill: "#87CEEB", // Sky blue
+			fill: "#009900", // Sky blue
 		});
 		this.group.add(bg);
+
+		this.player = new Konva.Rect({
+			x: 0,
+			y: 0,
+			width: 30,
+			height: 30,
+			fill: "#AA0000",
+		});
+		this.group.add(this.player);
 
 		// Score display (top-left)
 		this.scoreText = new Konva.Text({
@@ -36,27 +65,33 @@ export class FarmScreenView implements View {
 		this.group.add(this.scoreText);
 
 		// Timer display (top-right)
-		this.timerText = new Konva.Text({
+		this.startDayButton = new Konva.Text({
 			x: STAGE_WIDTH - 150,
 			y: 20,
-			text: "Time: 60",
+			text: "End Day",
 			fontSize: 32,
 			fontFamily: "Arial",
 			fill: "red",
 		});
-		this.group.add(this.timerText);
+		this.startDayButton.on("mouseup", handleStartDay)
+		this.group.add(this.startDayButton);
 
-		// TODO: Task 2 - Load and display lemon image using Konva.Image.fromURL()
-		// Placeholder circle (remove this when implementing the image)
-		Konva.Image.fromURL("/lemon.png", (image) => {
-			image.on("click", onLemonClick);
-			image.width(100);
-			image.height(100);
-			image.x((STAGE_WIDTH / 2) - 50);
-			image.y((STAGE_HEIGHT / 2) - 50);
-			this.lemonImage = image;
-			this.group.add(image);
-		})
+		// Planters
+		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
+			for (let y = 200; y < (STAGE_HEIGHT); y += (STAGE_HEIGHT - 200) / 4) {
+				const planter = new FarmPlanterController(this.group, x, y);
+				registerPlanter(planter);
+			}
+		}
+	}
+
+	spawnEmus(n: number): void {
+		if (!this.registerEmu) return;
+
+		for (let i = 0; i < n; i++) {
+			const emu = new EmuController(this.group, Math.random() * STAGE_WIDTH, Math.random() * STAGE_HEIGHT);
+			this.registerEmu(emu);
+		}
 	}
 
 	/**
@@ -68,34 +103,15 @@ export class FarmScreenView implements View {
 	}
 
 	/**
-	 * Randomize lemon position
+	 * Move the player a certain distance in a cardinal vector
+	 *
+	 * @param dx
+	 * @param dy
 	 */
-	randomizeLemonPosition(): void {
-		if (!this.lemonImage) return;
-
-		// Define safe boundaries (avoid edges)
-		const padding = 100;
-		const minX = padding;
-		const maxX = STAGE_WIDTH - padding;
-		const minY = padding;
-		const maxY = STAGE_HEIGHT - padding;
-
-		// Generate random position
-		const randomX = Math.random() * (maxX - minX) + minX;
-		const randomY = Math.random() * (maxY - minY) + minY;
-
-		// Update lemon position
-		this.lemonImage.x(randomX);
-		this.lemonImage.y(randomY);
-		this.group.getLayer()?.draw();
-	}
-
-	/**
-	 * Update timer display
-	 */
-	updateTimer(timeRemaining: number): void {
-		this.timerText.text(`Time: ${timeRemaining}`);
-		this.group.getLayer()?.draw();
+	movePlayerDelta(dx: number, dy: number): void {
+		if (!this.player) return;
+		this.player.x(this.player.x() + dx);
+		this.player.y(this.player.y() + dy);
 	}
 
 	/**
