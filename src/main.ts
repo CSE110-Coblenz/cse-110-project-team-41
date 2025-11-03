@@ -2,6 +2,7 @@ import Konva from "konva";
 import type { ScreenSwitcher, Screen } from "./types.ts";
 import { MainMenuScreenController } from "./screens/MainMenuScreen/MainMenuScreenController.ts";
 import { FarmScreenController } from "./screens/FarmScreen/FarmScreenController.ts";
+import { Game2ScreenController } from "./screens/Game2Screen/Game2ScreenContoller.ts";
 import { GameOverScreenController } from "./screens/GameOverScreen/GameOverScreenController.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { GameStatusController } from "./controllers/GameStatusController.ts";
@@ -23,6 +24,7 @@ class App implements ScreenSwitcher {
 	private gameStatusController: GameStatusController;
 	private menuController: MainMenuScreenController;
 	private gameController: FarmScreenController;
+	private game2Controller: Game2ScreenController;
 	private resultsController: GameOverScreenController;
 
 	constructor(container: string) {
@@ -42,12 +44,14 @@ class App implements ScreenSwitcher {
 		this.gameStatusController = new GameStatusController();
 		this.menuController = new MainMenuScreenController(this);
 		this.gameController = new FarmScreenController(this);
+		this.game2Controller = new Game2ScreenController(this);
 		this.resultsController = new GameOverScreenController(this);
 
 		// Add all screen groups to the layer
 		// All screens exist simultaneously but only one is visible at a time
 		this.layer.add(this.menuController.getView().getGroup());
 		this.layer.add(this.gameController.getView().getGroup());
+		this.layer.add(this.game2Controller.getView().getGroup());
 		this.layer.add(this.resultsController.getView().getGroup());
 
 		// Draw the layer (render everything to the canvas)
@@ -81,6 +85,11 @@ class App implements ScreenSwitcher {
 			case "farm":
 				// Start the game (which also shows the game screen)
 				this.gameController.startGame();
+				break;
+
+			case "minigame2":
+				// Start the second minigame
+				this.game2Controller.startGame2();
 				break;
 
 			case "game_over":
