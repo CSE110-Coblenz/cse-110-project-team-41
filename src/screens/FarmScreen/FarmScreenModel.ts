@@ -4,6 +4,7 @@
 export class FarmScreenModel {
 	private score = 0;
 	private round = 1;
+	private spawnNum = 20;
 
 	/**
 	 * Reset game state for a new game
@@ -11,6 +12,7 @@ export class FarmScreenModel {
 	reset(): void {
 		this.score = 0;
 		this.round = 1;
+		this.spawnNum = 2;
 	}
 
 	/**
@@ -39,7 +41,23 @@ export class FarmScreenModel {
 	 * Get the current round
 	 */
 
-	getRound() : number {
+	getRound(): number {
 		return this.round;
+	}
+
+	/** 
+	 * Increases the amount of Emus to spawn
+	*/
+
+	updateSpawn(): void {
+		this.spawnNum = Math.ceil(this.spawnNum * 1.3);
+	}
+
+	/**
+	 * Returns the amount of emus to spawn:
+	 */
+
+	getSpawn(): number {
+		return this.spawnNum;
 	}
 }

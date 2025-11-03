@@ -76,4 +76,8 @@ export class EmuController {
 	getView(): Konva.Rect | null {
 		return this.view.getView();
 	}
+
+	remove(): void{
+		this.view.removeFromGroup();
+	}
 }

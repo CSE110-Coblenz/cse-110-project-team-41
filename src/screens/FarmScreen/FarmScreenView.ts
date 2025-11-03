@@ -13,15 +13,20 @@ export class FarmScreenView implements View {
 	private scoreText: Konva.Text;
 	private startDayButton: Konva.Text;
 	private registerEmu: (emu: EmuController) => void = null;
+	private removeEmus: () => void = null;
+	private timerText: Konva.Text;
+	private roundText: Konva.Text;
 
 	constructor(
 		handleKeydown: (event: KeyboardEvent) => void,
 		handleKeyup: (event: KeyboardEvent) => void,
 		handleStartDay: () => void,
 		registerEmu: (emu: EmuController) => void,
+		removeEmus: () => void,
 		registerPlanter: (planter: FarmPlanterController) => void,
 	) {
 		this.registerEmu = registerEmu;
+		this.removeEmus = removeEmus;
 
 		window.addEventListener("keydown", (event) => {
 			const keyboardEvent = event as KeyboardEvent;
@@ -64,7 +69,7 @@ export class FarmScreenView implements View {
 		});
 		this.group.add(this.scoreText);
 
-		// Timer display (top-right)
+		// Start day button display
 		this.startDayButton = new Konva.Text({
 			x: STAGE_WIDTH - 150,
 			y: 20,
@@ -75,6 +80,28 @@ export class FarmScreenView implements View {
 		});
 		this.startDayButton.on("mouseup", handleStartDay)
 		this.group.add(this.startDayButton);
+
+		// Timer display
+		this.timerText = new Konva.Text({
+			x: STAGE_WIDTH - 300,
+			y: 20,
+			text: "Time: 60",
+			fontSize: 32,
+			fontFamily: "Arial",
+			fill: "blue",
+		});
+		this.group.add(this.timerText);
+
+		//Round display
+		this.roundText = new Konva.Text({
+			x: STAGE_WIDTH - 530,
+			y: 20,
+			text: "Round: 1",
+			fontSize: 32,
+			fontFamily: "Arial",
+			fill: "black",
+		});
+		this.group.add(this.roundText);
 
 		// Planters
 		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
@@ -94,11 +121,36 @@ export class FarmScreenView implements View {
 		}
 	}
 
+	clearEmus(): void {
+		if (!this.removeEmus) return;
+		this.removeEmus();
+		/**
+		 * Should remove all emu objects from the game
+		 * Is called when the timer ends
+		 */
+	}
+
 	/**
 	 * Update score display
 	 */
 	updateScore(score: number): void {
 		this.scoreText.text(`Score: ${score}`);
+		this.group.getLayer()?.draw();
+	}
+
+	/**
+	 * Update timer display
+	 */
+	updateTimer(timeRemaining: number): void {
+		this.timerText.text(`Time: ${timeRemaining}`);
+		this.group.getLayer()?.draw();
+	}
+
+	/**
+	 * Update round display
+	 */
+	updateRound(round: number): void {
+		this.roundText.text(`Round: ${round}`);
 		this.group.getLayer()?.draw();
 	}
 

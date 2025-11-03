@@ -32,4 +32,8 @@ export class EmuView {
 	getView(): Konva.Rect | null {
 		return this.emu;
 	}
+
+	removeFromGroup(): void{
+		this.emu?.remove();
+	}
 }
