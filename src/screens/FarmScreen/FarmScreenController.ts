@@ -2,7 +2,7 @@ import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { FarmScreenModel } from "./FarmScreenModel.ts";
 import { FarmScreenView } from "./FarmScreenView.ts";
-import {ONE_OVER_ROOT_TWO, PLAYER_SPEED, STAGE_HEIGHT, STAGE_WIDTH} from "../../constants.ts";
+import {ONE_OVER_ROOT_TWO, PLAYER_SPEED, STAGE_HEIGHT, STAGE_WIDTH, GAME_DURATION} from "../../constants.ts";
 import {EmuController} from "../../components/EmuComponent/EmuController.ts";
 import type {FarmPlanterController} from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
 
@@ -34,6 +34,7 @@ export class FarmScreenController extends ScreenController {
 			(event: KeyboardEvent) => this.handleKeyup(event),
 			() => this.handleEndDay(),
 			(emu: EmuController) => this.registerEmu(emu),
+			() => this.removeEmus(),
 			(planter: FarmPlanterController) => this.registerPlanter(planter),
 		);
 
@@ -69,7 +70,23 @@ export class FarmScreenController extends ScreenController {
 
 		// Update view
 		this.view.updateScore(this.model.getScore());
+		this.view.updateTimer(GAME_DURATION);
 		this.view.show();
+
+		this.startTimer();
+	}
+
+	/**
+	 * Start the round
+	 */
+	startRound(): void {
+		// Update view
+		this.view.updateScore(this.model.getScore());
+		this.view.updateTimer(GAME_DURATION);
+		this.view.updateRound(this.model.getRound());
+		this.view.show();
+
+		this.startTimer();
 	}
 
 	/**
@@ -104,12 +121,32 @@ export class FarmScreenController extends ScreenController {
 	 * Start day
 	 */
 	private handleEndDay(): void {
-		this.view.spawnEmus(20);
+		this.endRound();
+		this.model.updateSpawn();
+		this.view.spawnEmus(this.model.getSpawn());
 		for (let i = 0; i < this.emus.length; i++) {
 			const target = this.planters[Math.floor(Math.random() * this.planters.length)].getView()
 			if (!target) { return }
 			this.emus[i].setTarget(target);
 		}
+		this.startRound();
+	}
+
+	/**
+	 * Start the countdown timer
+	 */
+	private startTimer(): void {
+		// TODO: Task 3 - Implement countdown timer using setInterval
+		let timeRemaining: number = GAME_DURATION;
+		const timerId = setInterval(() => {
+  			timeRemaining--;
+			this.view.updateTimer(timeRemaining);
+			if(timeRemaining <= 0){
+				this.endRound();
+			}
+		}, 1000) as unknown as number;
+		
+		this.gameTimer = timerId;
 	}
 
 	/**
@@ -120,24 +157,33 @@ export class FarmScreenController extends ScreenController {
 			return
 		}
 		clearInterval(this.gameTimer);
-		this.gameTimer = null;
 	}
 
 	/**
 	 * End the game
 	 */
-	private endGame(): void {
+	private endRound(): void {
 		this.stopTimer();
-
+		this.view.clearEmus();
+		this.model.incrementRound();
 		// Switch to results screen with final score
-		this.screenSwitcher.switchToScreen({
-			type: "game_over",
-			score: this.model.getScore(),
-		});
+		// this.screenSwitcher.switchToScreen({
+		// 	type: "game_over",
+		// 	score: this.model.getScore(),
+		// });
 	}
 
 	private registerEmu(emu: EmuController): void {
 		this.emus.push(emu);
+	}
+
+	private removeEmus(): void {
+		while(this.emus.length > 0){
+			const emu = this.emus.pop();
+			if (emu){
+				emu.remove();
+			}
+		}
 	}
 
 	private registerPlanter(planter: FarmPlanterController): void {
