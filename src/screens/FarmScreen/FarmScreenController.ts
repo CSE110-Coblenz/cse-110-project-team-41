@@ -3,6 +3,8 @@ import type { ScreenSwitcher } from "../../types.ts";
 import { FarmScreenModel } from "./FarmScreenModel.ts";
 import { FarmScreenView } from "./FarmScreenView.ts";
 import { GAME_DURATION } from "../../constants.ts";
+import { GameStatusController } from "../../controllers/GameStatusController.ts";
+import { AudioManager } from "../../services/AudioManager.ts";
 
 /**
  * GameScreenController - Coordinates game logic between Model and View
@@ -13,18 +15,20 @@ export class FarmScreenController extends ScreenController {
 	private screenSwitcher: ScreenSwitcher;
 	private gameTimer: number | null = null;
 
-	private squeezeSound: HTMLAudioElement;
+	private status: GameStatusController;
+	private audio: AudioManager;
 
-	constructor(screenSwitcher: ScreenSwitcher) {
+	constructor(screenSwitcher: ScreenSwitcher, status: GameStatusController, audio: AudioManager) {
 		super();
 		this.screenSwitcher = screenSwitcher;
+		this.status = status;
+		this.audio = audio;
 
 		this.model = new FarmScreenModel();
 		this.view = new FarmScreenView(() => this.handleLemonClick());
 
-		// TODO: Task 4 - Initialize squeeze sound audio
-		this.squeezeSound = new Audio("/squeeze.mp3"); // Placeholder
-	}
+		// Audio provided via AudioManager
+}
 
 	/**
 	 * Start the game
@@ -77,9 +81,9 @@ export class FarmScreenController extends ScreenController {
 		this.view.updateScore(this.model.getScore());
 		this.view.randomizeLemonPosition();
 
-		// TODO: Task 4 - Play the squeeze sound
-		this.squeezeSound.currentTime = 0;
-		this.squeezeSound.play();
+		// Play harvest sound and add to inventory for morning events
+		this.status.addToInventory("crop", 1);
+		this.audio.playSfx("harvest");
 	}
 
 	/**
@@ -88,11 +92,9 @@ export class FarmScreenController extends ScreenController {
 	private endGame(): void {
 		this.stopTimer();
 
-		// Switch to results screen with final score
-		this.screenSwitcher.switchToScreen({
-			type: "game_over",
-			score: this.model.getScore(),
-		});
+		// End the day and go to morning events screen
+		this.status.endDay();
+		this.screenSwitcher.switchToScreen({ type: "morning" });
 	}
 
 	/**
