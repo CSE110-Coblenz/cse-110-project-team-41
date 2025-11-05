@@ -2,6 +2,7 @@ import Konva from "konva";
 import type { ScreenSwitcher, Screen } from "./types.ts";
 import { MainMenuScreenController } from "./screens/MainMenuScreen/MainMenuScreenController.ts";
 import { FarmScreenController } from "./screens/FarmScreen/FarmScreenController.ts";
+import { Game2ScreenController } from "./screens/Game2Screen/Game2ScreenContoller.ts";
 import { GameOverScreenController } from "./screens/GameOverScreen/GameOverScreenController.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { GameStatusController } from "./controllers/GameStatusController.ts";
@@ -26,6 +27,7 @@ class App implements ScreenSwitcher {
 	private audioManager: AudioManager;
 	private menuController: MainMenuScreenController;
 	private gameController: FarmScreenController;
+	private game2Controller: Game2ScreenController;
 	private resultsController: GameOverScreenController;
 	private morningController: MorningEventsScreenController;
 
@@ -46,6 +48,7 @@ class App implements ScreenSwitcher {
 		this.gameStatusController = new GameStatusController();
 		this.audioManager = new AudioManager();
 		this.menuController = new MainMenuScreenController(this);
+		this.game2Controller = new Game2ScreenController(this);
 		this.gameController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
 		this.resultsController = new GameOverScreenController(this, this.audioManager);
 		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
@@ -54,6 +57,7 @@ class App implements ScreenSwitcher {
 		// All screens exist simultaneously but only one is visible at a time
 		this.layer.add(this.menuController.getView().getGroup());
 		this.layer.add(this.gameController.getView().getGroup());
+		this.layer.add(this.game2Controller.getView().getGroup());
 		this.layer.add(this.resultsController.getView().getGroup());
 		this.layer.add(this.morningController.getView().getGroup());
 
@@ -92,6 +96,9 @@ class App implements ScreenSwitcher {
 				this.gameController.startGame();
 				break;
 
+			case "minigame2":
+				// Start the second minigame
+				this.game2Controller.startGame2();
 			case "morning":
 				this.audioManager.playBgm("morning");
 				this.morningController.show();

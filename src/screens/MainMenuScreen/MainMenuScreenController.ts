@@ -12,7 +12,7 @@ export class MainMenuScreenController extends ScreenController {
 	constructor(screenSwitcher: ScreenSwitcher) {
 		super();
 		this.screenSwitcher = screenSwitcher;
-		this.view = new MainMenuScreenView(() => this.handleStartClick());
+		this.view = new MainMenuScreenView(() => this.handleStartClick(), () => this.handleStartClick2());
 	}
 
 	/**
@@ -20,6 +20,13 @@ export class MainMenuScreenController extends ScreenController {
 	 */
 	private handleStartClick(): void {
 		this.screenSwitcher.switchToScreen({type: "farm"})
+	}
+
+	/**
+	 * Handle temporary start button click, used for testing
+	 */
+	private handleStartClick2(): void {
+		this.screenSwitcher.switchToScreen({type: "minigame2"})
 	}
 
 	/**
