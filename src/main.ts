@@ -99,6 +99,8 @@ class App implements ScreenSwitcher {
 			case "minigame2":
 				// Start the second minigame
 				this.game2Controller.startGame2();
+				break;
+
 			case "morning":
 				this.audioManager.playBgm("morning");
 				this.morningController.show();

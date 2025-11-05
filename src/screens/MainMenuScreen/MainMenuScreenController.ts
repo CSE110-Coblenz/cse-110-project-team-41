@@ -19,7 +19,7 @@ export class MainMenuScreenController extends ScreenController {
 	 * Handle start button click
 	 */
 	private handleStartClick(): void {
-		this.screenSwitcher.switchToScreen({type: "farm"})
+		this.screenSwitcher.switchToScreen({type: "morning"})
 	}
 
 	/**
