@@ -5,6 +5,7 @@ import {
 	type LeaderboardEntry,
 } from "./GameOverScreenModel.ts";
 import { GameOverScreenView } from "./GameOverScreenView.ts";
+import { AudioManager } from "../../services/AudioManager.ts";
 
 const LEADERBOARD_KEY = "lemonClickerLeaderboard";
 const MAX_LEADERBOARD_ENTRIES = 5;
@@ -17,16 +18,15 @@ export class GameOverScreenController extends ScreenController {
 	private view: GameOverScreenView;
 	private screenSwitcher: ScreenSwitcher;
 
-	private gameOverSound: HTMLAudioElement;
+	private audio: AudioManager;
 
-	constructor(screenSwitcher: ScreenSwitcher) {
+	constructor(screenSwitcher: ScreenSwitcher, audio: AudioManager) {
 		super();
 		this.screenSwitcher = screenSwitcher;
 		this.model = new GameOverScreenModel();
 		this.view = new GameOverScreenView(() => this.handlePlayAgainClick());
 
-		// TODO: Task 4 - Initialize game over sound audio
-		this.gameOverSound = new Audio("/gameover.mp3"); // Placeholder
+		this.audio = audio;
 	}
 
 	/**
@@ -50,9 +50,8 @@ export class GameOverScreenController extends ScreenController {
 
 		this.view.show();
 
-		// TODO: Task 4 - Play the game over sound
-		this.gameOverSound.currentTime = 0
-		this.gameOverSound.play();
+		// Play a game over sound effect (BGM handled by App)
+		this.audio.playSfx("gameover");
 	}
 
 	/**
