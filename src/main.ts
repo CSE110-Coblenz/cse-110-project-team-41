@@ -8,6 +8,7 @@ import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { GameStatusController } from "./controllers/GameStatusController.ts";
 import { MorningEventsScreenController } from "./screens/MorningEventsScreen/MorningEventsScreenController.ts";
 import { AudioManager } from "./services/AudioManager.ts";
+import { Minigame1RaidController } from "./screens/Minigame1Screen/Minigame1RaidController.ts";
 
 /**
  * Main Application - Coordinates all screens
@@ -30,6 +31,7 @@ class App implements ScreenSwitcher {
 	private game2Controller: Game2ScreenController;
 	private resultsController: GameOverScreenController;
 	private morningController: MorningEventsScreenController;
+	private minigame1RaidController: Minigame1RaidController;
 
 	constructor(container: string) {
 		// Initialize Konva stage (the main canvas)
@@ -52,6 +54,10 @@ class App implements ScreenSwitcher {
 		this.gameController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
 		this.resultsController = new GameOverScreenController(this, this.audioManager);
 		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
+		this.minigame1RaidController = new Minigame1RaidController(
+			this,
+			this.gameStatusController,
+		);
 
 		// Add all screen groups to the layer
 		// All screens exist simultaneously but only one is visible at a time
@@ -60,6 +66,7 @@ class App implements ScreenSwitcher {
 		this.layer.add(this.game2Controller.getView().getGroup());
 		this.layer.add(this.resultsController.getView().getGroup());
 		this.layer.add(this.morningController.getView().getGroup());
+		this.layer.add(this.minigame1RaidController.getView().getGroup());
 
 		// Draw the layer (render everything to the canvas)
 		this.layer.draw();
@@ -85,8 +92,7 @@ class App implements ScreenSwitcher {
 		this.resultsController.hide();
 		this.game2Controller.hide();
 		this.morningController.hide();
-
-		console.log(screen);
+		this.minigame1RaidController.hide();
 
 		// Show the requested screen based on the screen type
 		switch (screen.type) {
@@ -115,9 +121,15 @@ class App implements ScreenSwitcher {
 				this.audioManager.playBgm("gameover");
 				this.resultsController.showResults(screen.score);
 				break;
+			
+			case "minigame1_raid":
+    			this.minigame1RaidController.startGame(); // A new method you'd create in the controller
+    			break;
 		}
 	}
 }
 
 // Initialize the application
 new App("container");
+
+

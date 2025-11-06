@@ -7,6 +7,7 @@ type PersistedState = {
     money: number;
     inventory: Inventory;
     emuCount: number;
+    emuEggs: number;
 };
 
 const STORAGE_KEY = "game:status";
@@ -20,6 +21,7 @@ export class GameStatusController {
     private day: number;
     private money: number;
     private inventory: Inventory;
+	private emuEggs: number;
 
     constructor() {
         const saved = this.load();
@@ -28,11 +30,13 @@ export class GameStatusController {
             this.money = saved.money;
             this.inventory = saved.inventory;
             this.emuCount = saved.emuCount;
+            this.emuEggs = saved.emuEggs;
         } else {
             this.day = 1;
             this.money = 0;
             this.inventory = {};
             this.emuCount = STARTING_EMU_COUNT;
+            this.emuEggs = 0;
             this.save();
         }
     }
@@ -44,6 +48,7 @@ export class GameStatusController {
             money: this.money,
             inventory: this.inventory,
             emuCount: this.emuCount,
+            emuEggs: this.emuEggs
         };
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
     }
@@ -109,4 +114,19 @@ export class GameStatusController {
     getFinalScore(): number {
         return this.day;
     }
+
+	/**
+	 * Adds collected eggs to the main game's inventory.
+	 */
+	public addEmuEggs(amount: number): void {
+		this.emuEggs += amount;
+		console.log(`Total eggs: ${this.emuEggs}`); // For debugging
+	}
+
+	/**
+	 * Gets the total number of emu eggs.
+	 */
+	public getEmuEggCount(): number {
+		return this.emuEggs;
+	}
 }
