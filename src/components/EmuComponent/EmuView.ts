@@ -1,19 +1,43 @@
 import Konva from "konva";
+import emuSrc from "../../../assets/Emu.png";
+
+const createImage = (src: string): HTMLImageElement => {
+	if (typeof Image !== "undefined") {
+		const image = new Image();
+		image.src = src;
+		return image;
+	}
+
+	const fallback = document.createElement("img") as HTMLImageElement;
+	fallback.src = src;
+	return fallback;
+};
 
 /**
  * GameScreenView - Renders the game UI using Konva
  */
 export class EmuView {
-	private emu: Konva.Rect | null = null;
+	private emu: Konva.Image | null = null;
 
 	constructor(group: Konva.Group, startX: number, startY: number) {
-		this.emu = new Konva.Rect({
+		const sprite = createImage(emuSrc);
+		this.emu = new Konva.Image({
 			x: startX,
 			y: startY,
-			width: 30,
-			height: 30,
-			fill: "#0000AA",
+			width: 36,
+			height: 36,
+			listening: false,
 		});
+
+		if (sprite.complete) {
+			this.emu.image(sprite);
+		} else {
+			sprite.onload = () => {
+				this.emu?.image(sprite);
+				this.emu?.getLayer()?.batchDraw();
+			};
+		}
+
 		group.add(this.emu);
 	}
 
@@ -29,7 +53,7 @@ export class EmuView {
 		this.emu.y(this.emu.y() + dy);
 	}
 
-	getView(): Konva.Rect | null {
+	getView(): Konva.Image | null {
 		return this.emu;
 	}
 

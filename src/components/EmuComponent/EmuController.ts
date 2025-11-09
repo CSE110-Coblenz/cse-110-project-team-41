@@ -73,7 +73,7 @@ export class EmuController {
 	}
 
 
-	getView(): Konva.Rect | null {
+	getView(): Konva.Image | null {
 		return this.view.getView();
 	}
 

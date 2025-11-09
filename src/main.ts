@@ -47,11 +47,12 @@ class App implements ScreenSwitcher {
 		// Each controller manages a Model, View, and handles user interactions
 		this.gameStatusController = new GameStatusController();
 		this.audioManager = new AudioManager();
-		this.menuController = new MainMenuScreenController(this);
+		this.menuController = new MainMenuScreenController(this, this.gameStatusController);
 		this.game2Controller = new Game2ScreenController(this);
 		this.gameController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
 		this.resultsController = new GameOverScreenController(this, this.audioManager);
 		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
+		this.gameController.setMorningController(this.morningController);
 
 		// Add all screen groups to the layer
 		// All screens exist simultaneously but only one is visible at a time

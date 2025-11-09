@@ -7,7 +7,7 @@ import {
 import { GameOverScreenView } from "./GameOverScreenView.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
 
-const LEADERBOARD_KEY = "lemonClickerLeaderboard";
+const LEADERBOARD_KEY = "farmDefenseLeaderboard";
 const MAX_LEADERBOARD_ENTRIES = 5;
 
 /**

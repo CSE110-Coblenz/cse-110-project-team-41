@@ -48,6 +48,10 @@ export class GameStatusController {
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
     }
 
+	public saveState(): void {
+		this.save();
+	}
+
     private load(): PersistedState | null {
         try {
             const str = localStorage.getItem(STORAGE_KEY);
@@ -108,5 +112,21 @@ export class GameStatusController {
      */
     getFinalScore(): number {
         return this.day;
+    }
+
+    reset(): void {
+        this.day = 1;
+        this.money = 0;
+        this.inventory = {};
+        this.emuCount = STARTING_EMU_COUNT;
+        this.save();
+    }
+
+    hasSavedState(): boolean {
+        try {
+            return Boolean(localStorage.getItem(STORAGE_KEY));
+        } catch {
+            return false;
+        }
     }
 }
