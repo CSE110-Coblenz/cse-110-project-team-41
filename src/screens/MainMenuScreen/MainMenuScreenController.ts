@@ -26,7 +26,7 @@ export class MainMenuScreenController extends ScreenController {
 	 * Handle temporary start button click, used for testing
 	 */
 	private handleStartClick2(): void {
-		this.screenSwitcher.switchToScreen({type: "minigame2"})
+		this.screenSwitcher.switchToScreen({type: "minigame2_intro"})
 	}
 
 	/**

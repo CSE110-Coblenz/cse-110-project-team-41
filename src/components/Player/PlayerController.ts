@@ -15,7 +15,7 @@ export class PlayerController {
   }
 
   // Update player position based on input keys and obstacles
-  update(keys: Set<string>, obstacles: ObstacleModel[]) {
+  update(keys: Set<string>, obstacles: ObstacleModel[], stageWidth: number, stageHeight: number, gameAreaY: number = 0, gameAreaHeight: number = stageHeight) {
     const speed = this.model.speed;
     let dx = 0,
       dy = 0;
@@ -41,9 +41,18 @@ export class PlayerController {
       this.model.isMoving = true;
     }
 
-    // Calculate next position and check for collisions
-    const nextX = this.model.x + dx;
-    const nextY = this.model.y + dy;
+    // Calculate next position
+    let nextX = this.model.x + dx;
+    let nextY = this.model.y + dy;
+
+    // Player bounding box is 30x30, so radius is 15
+    const radius = 15;
+
+    // Clamp position within game area boundaries (accounting for HUD)
+    nextX = Math.max(radius, Math.min(stageWidth - radius, nextX));
+    nextY = Math.max(gameAreaY + radius, Math.min(gameAreaY + gameAreaHeight - radius, nextY));
+
+    // Check for obstacle collisions
     const nextBox = { x: nextX, y: nextY, w: 30, h: 30 };
     const blocked = obstacles.some((o) => o.collides(nextBox));
     if (!blocked) {
