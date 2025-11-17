@@ -1,63 +1,94 @@
-import { ScreenController } from "../../types.ts";
-import type { ScreenSwitcher } from "../../types.ts";
-import { GameStatusController } from "../../controllers/GameStatusController.ts";
+import { ScreenController } from "../../types";
+import type { ScreenSwitcher } from "../../types";
+import { GameStatusController } from "../../controllers/GameStatusController";
 import {
 	Minigame1RaidModel,
 	TILE_TYPE,
 	EGG_COUNT,
 	MAZE_WIDTH,
 	MAZE_HEIGHT,
-} from "./Minigame1RaidModel.ts";
-import { Minigame1RaidView } from "./Minigame1RaidView.ts";
+} from "./Minigame1RaidModel";
+import { Minigame1RaidView } from "./Minigame1RaidView";
 
 export class Minigame1RaidController extends ScreenController {
 	private model: Minigame1RaidModel;
 	private view: Minigame1RaidView;
 	private screenSwitcher: ScreenSwitcher;
-	private gameStatus: GameStatusController; 
+	private gameStatus: GameStatusController;
 	private gameTimer: number | null = null;
 
 	constructor(
 		screenSwitcher: ScreenSwitcher,
-		gameStatus: GameStatusController, 
+		gameStatus: GameStatusController,
 	) {
 		super();
 		this.screenSwitcher = screenSwitcher;
-		this.gameStatus = gameStatus; 
+		this.gameStatus = gameStatus;
 		this.model = new Minigame1RaidModel();
 		this.view = new Minigame1RaidView();
 
 		window.addEventListener("keydown", (e) => this.handleKeyDown(e));
 	}
 
-	/**
-	 * Generates a new random maze and places eggs.
-	 */
 	private generateRandomMaze(): void {
-		// --- TODO: Replace with a real maze algorithm (e.g., Recursive Backtracking) ---
-		// For now, let's make a simple test maze:
 		this.model.reset();
 		const layout = this.model.mazeLayout;
-		layout[1][1] = TILE_TYPE.START;
-		layout[1][2] = TILE_TYPE.PATH;
-		layout[1][3] = TILE_TYPE.PATH;
-		layout[2][3] = TILE_TYPE.PATH;
-		layout[3][3] = TILE_TYPE.EXIT;
-		this.model.playerPosition = { x: 1, y: 1 };
-		// --- End of test maze ---
+		const stack: { x: number; y: number }[] = [];
+		const start = { x: 1, y: 1 };
+		layout[start.y][start.x] = TILE_TYPE.PATH;
+		stack.push(start);
 
-		// --- ADDED: Randomly place eggs on path tiles ---
+		while (stack.length > 0) {
+			const current = stack[stack.length - 1];
+			const neighbors = [];
+			const directions = [
+				{ dx: 0, dy: -2 },
+				{ dx: 0, dy: 2 },
+				{ dx: -2, dy: 0 },
+				{ dx: 2, dy: 0 },
+			];
+			for (const dir of directions) {
+				const nx = current.x + dir.dx;
+				const ny = current.y + dir.dy;
+				if (
+					nx > 0 &&
+					nx < MAZE_WIDTH - 1 &&
+					ny > 0 &&
+					ny < MAZE_HEIGHT - 1 &&
+					layout[ny][nx] === TILE_TYPE.WALL
+				) {
+					neighbors.push({ x: nx, y: ny, px: dir.dx / 2, py: dir.dy / 2 });
+				}
+			}
+			if (neighbors.length > 0) {
+				const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+				layout[current.y + next.py][current.x + next.px] = TILE_TYPE.PATH;
+				layout[next.y][next.x] = TILE_TYPE.PATH;
+				stack.push({ x: next.x, y: next.y });
+			} else {
+				stack.pop();
+			}
+		}
+
+		layout[1][1] = TILE_TYPE.START;
+		let exitSet = false;
+		for (let y = MAZE_HEIGHT - 2; y > MAZE_HEIGHT / 2 && !exitSet; y--) {
+			for (let x = MAZE_WIDTH - 2; x > MAZE_WIDTH / 2 && !exitSet; x--) {
+				if (layout[y][x] === TILE_TYPE.PATH) {
+					layout[y][x] = TILE_TYPE.EXIT;
+					exitSet = true;
+				}
+			}
+		}
+		this.model.playerPosition = { x: 1, y: 1 };
+
 		let eggsPlaced = 0;
-		while (eggsPlaced < EGG_COUNT) {
+		let attempts = 0;
+		while (eggsPlaced < EGG_COUNT && attempts < 1000) {
+			attempts++;
 			const x = Math.floor(Math.random() * MAZE_WIDTH);
 			const y = Math.floor(Math.random() * MAZE_HEIGHT);
-
-			// Place an egg if the tile is a path and not start/exit
-			if (
-				y < layout.length &&
-				x < layout[y].length &&
-				layout[y][x] === TILE_TYPE.PATH
-			) {
+			if (layout[y][x] === TILE_TYPE.PATH) {
 				layout[y][x] = TILE_TYPE.EGG;
 				eggsPlaced++;
 			}
@@ -65,7 +96,6 @@ export class Minigame1RaidController extends ScreenController {
 	}
 
 	public startGame(): void {
-		this.model.reset();
 		this.generateRandomMaze();
 		this.view.drawMaze(this.model.mazeLayout);
 		this.view.updatePlayerPosition(
@@ -79,31 +109,24 @@ export class Minigame1RaidController extends ScreenController {
 	}
 
 	private startTimer(): void {
-		this.stopTimer();
+		if (this.gameTimer) {
+			clearInterval(this.gameTimer);
+		}
 		this.gameTimer = setInterval(() => {
 			this.model.timeRemaining--;
 			this.view.updateTimer(this.model.timeRemaining);
 
 			if (this.model.timeRemaining <= 0) {
-				this.endGame(false); // Time's up
+				this.endGame(false); // Time's up!
 			}
 		}, 1000);
 	}
 
-	private stopTimer(): void {
-		if (this.gameTimer) {
-			clearInterval(this.gameTimer);
-			this.gameTimer = null;
-		}
-	}
-
 	private handleKeyDown(e: KeyboardEvent): void {
-		if (!this.view.getGroup().visible()) return; // Don't move if minigame isn't active
-
+		if (!this.view.getGroup().visible()) return;
 		let { x, y } = this.model.playerPosition;
 		let newX = x;
 		let newY = y;
-
 		switch (e.key) {
 			case "ArrowUp":
 				newY--;
@@ -121,66 +144,52 @@ export class Minigame1RaidController extends ScreenController {
 				return;
 		}
 		e.preventDefault();
-
-		// Check boundaries
 		if (
 			newY < 0 ||
 			newY >= MAZE_HEIGHT ||
 			newX < 0 ||
 			newX >= MAZE_WIDTH
-		) {
-			return; // Out of bounds
-		}
-
+		)
+			return;
 		const tile = this.model.mazeLayout[newY][newX];
-
 		if (tile !== TILE_TYPE.WALL) {
 			this.model.playerPosition = { x: newX, y: newY };
 			this.view.updatePlayerPosition(newX, newY);
-
-			// --- ADDED: Collection Logic ---
 			if (tile === TILE_TYPE.EGG) {
 				this.model.eggsCollected++;
 				this.view.updateEggCount(this.model.eggsCollected);
-				// Remove the egg from the model and redraw the maze
 				this.model.mazeLayout[newY][newX] = TILE_TYPE.PATH;
 				this.view.drawMaze(this.model.mazeLayout);
 			}
-
 			if (tile === TILE_TYPE.EXIT) {
-				this.endGame(true); // Player reached the exit!
+				this.endGame(true);
 			}
 		}
 	}
 
 	private endGame(didWin: boolean): void {
-		this.stopTimer();
-
-		// --- MODIFIED: Show popup and transfer resources ---
-		const eggs = this.model.eggsCollected;
-
-		if (didWin) {
-			console.log("Minigame 1 Won! You get an emu egg!");
-			// We can add the exit egg as a bonus
-			// this.gameStatus.addEmuEggs(eggs + 1);
-			// this.view.showEndPopup(eggs + 1);
-		} else {
-			console.log("Minigame 1 Lost. Time ran out.");
+		if (this.gameTimer) {
+			clearInterval(this.gameTimer);
 		}
 
-		// Show popup and transfer eggs
-		this.gameStatus.addEmuEggs(eggs);
-		this.view.showEndPopup(eggs);
+		if (didWin) {
+			// ONLY add eggs if they won!
+			this.gameStatus.addEmuEggs(this.model.eggsCollected);
+			this.view.showEndPopup(
+				`MISSION COMPLETE!\n\nYou reached the exit with\n${this.model.eggsCollected} eggs!`,
+			);
+		} else {
+			// NO eggs added here. They lost them all!
+			this.view.showEndPopup(
+				`TIME'S UP!\n\nYou collected ${this.model.eggsCollected} eggs,\nbut you got caught by the emus\nand dropped all your eggs to run!`,
+			);
+		}
 
-		// Pause for 3 seconds to let the player read the popup
 		setTimeout(() => {
 			this.view.hide();
-			// Switch back to the main game
 			this.screenSwitcher.switchToScreen({ type: "farm" });
-		}, 3000); // 3000ms = 3 seconds
+		}, 5000); // Increased to 5s to give time to read the longer message
 	}
-
-
 
 	getView(): Minigame1RaidView {
 		return this.view;
