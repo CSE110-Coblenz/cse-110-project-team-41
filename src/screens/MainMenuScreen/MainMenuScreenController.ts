@@ -27,7 +27,7 @@ export class MainMenuScreenController extends ScreenController {
 	}
 
 	private handleStartClick3(): void {
-		this.screenSwitcher.switchToScreen({type: "minigame2"})
+		this.screenSwitcher.switchToScreen({type: "minigame2_intro"})
 	}
 
 	/**
