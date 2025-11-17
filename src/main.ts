@@ -10,17 +10,8 @@ import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { GameStatusController } from "./controllers/GameStatusController.ts";
 import { MorningEventsScreenController } from "./screens/MorningEventsScreen/MorningEventsScreenController.ts";
 import { AudioManager } from "./services/AudioManager.ts";
+import { Minigame1RaidController } from "./screens/Minigame1Screen/Minigame1RaidController.ts";
 
-/**
- * Main Application - Coordinates all screens
- *
- * This class demonstrates screen management using Konva Groups.
- * Each screen (Menu, Game, Results) has its own Konva.Group that can be
- * shown or hidden independently.
- *
- * Key concept: All screens are added to the same layer, but only one is
- * visible at a time. This is managed by the switchToScreen() method.
- */
 class App implements ScreenSwitcher {
 	private stage: Konva.Stage;
 	private layer: Konva.Layer;
@@ -34,21 +25,18 @@ class App implements ScreenSwitcher {
 	private game2EndController: Game2EndScreenController;
 	private resultsController: GameOverScreenController;
 	private morningController: MorningEventsScreenController;
+	private minigame1RaidController: Minigame1RaidController;
 
 	constructor(container: string) {
-		// Initialize Konva stage (the main canvas)
 		this.stage = new Konva.Stage({
 			container,
 			width: STAGE_WIDTH,
 			height: STAGE_HEIGHT,
 		});
 
-		// Create a layer (screens will be added to this layer)
 		this.layer = new Konva.Layer();
 		this.stage.add(this.layer);
 
-		// Initialize all screen controllers
-		// Each controller manages a Model, View, and handles user interactions
 		this.gameStatusController = new GameStatusController();
 		this.audioManager = new AudioManager();
 		this.menuController = new MainMenuScreenController(this);
@@ -57,10 +45,12 @@ class App implements ScreenSwitcher {
 		this.game2EndController = new Game2EndScreenController(this);
 		this.gameController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
 		this.resultsController = new GameOverScreenController(this, this.audioManager);
-		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
+		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);		
+		this.minigame1RaidController = new Minigame1RaidController(
+			this,
+			this.gameStatusController
+		);
 
-		// Add all screen groups to the layer
-		// All screens exist simultaneously but only one is visible at a time
 		this.layer.add(this.menuController.getView().getGroup());
 		this.layer.add(this.gameController.getView().getGroup());
 		this.layer.add(this.game2Controller.getView().getGroup());
@@ -68,8 +58,8 @@ class App implements ScreenSwitcher {
 		this.layer.add(this.game2EndController.getView().getGroup());
 		this.layer.add(this.resultsController.getView().getGroup());
 		this.layer.add(this.morningController.getView().getGroup());
+		this.layer.add(this.minigame1RaidController.getView().getGroup());
 
-		// Draw the layer (render everything to the canvas)
 		this.layer.draw();
 
 		// Start with menu screen visible
@@ -77,17 +67,7 @@ class App implements ScreenSwitcher {
 		this.audioManager.playBgm("menu");
 	}
 
-	/**
-	 * Switch to a different screen
-	 *
-	 * This method implements screen management by:
-	 * 1. Hiding all screens (setting their Groups to invisible)
-	 * 2. Showing only the requested screen
-	 *
-	 * This pattern ensures only one screen is visible at a time.
-	 */
 	switchToScreen(screen: Screen): void {
-		// Hide all screens first by setting their Groups to invisible
 		this.menuController.hide();
 		this.gameController.hide();
 		this.resultsController.hide();
@@ -95,10 +75,8 @@ class App implements ScreenSwitcher {
 		this.game2IntroController.hide();
 		this.game2EndController.hide();
 		this.morningController.hide();
+		this.minigame1RaidController.hide();
 
-		console.log(screen);
-
-		// Show the requested screen based on the screen type
 		switch (screen.type) {
 			case "main_menu":
 				this.menuController.show();
@@ -133,11 +111,14 @@ class App implements ScreenSwitcher {
 			case "game_over":
 				// Show results with the final score
 				this.audioManager.playBgm("gameover");
-				this.resultsController.showResults(screen.score);
+				this.gameController.startGame();
+				break;
+
+			case "minigame1_raid":
+				this.minigame1RaidController.startGame();
 				break;
 		}
 	}
 }
 
-// Initialize the application
 new App("container");
