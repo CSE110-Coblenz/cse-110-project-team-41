@@ -3,6 +3,8 @@ import type { ScreenSwitcher, Screen } from "./types.ts";
 import { MainMenuScreenController } from "./screens/MainMenuScreen/MainMenuScreenController.ts";
 import { FarmScreenController } from "./screens/FarmScreen/FarmScreenController.ts";
 import { Game2ScreenController } from "./screens/Game2Screen/Game2ScreenContoller.ts";
+import { Game2IntroScreenController } from "./screens/Game2IntroScreen/Game2IntroScreenController.ts";
+import { Game2EndScreenController } from "./screens/Game2EndScreen/Game2EndScreenController.ts";
 import { GameOverScreenController } from "./screens/GameOverScreen/GameOverScreenController.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { GameStatusController } from "./controllers/GameStatusController.ts";
@@ -19,6 +21,8 @@ class App implements ScreenSwitcher {
 	private menuController: MainMenuScreenController;
 	private gameController: FarmScreenController;
 	private game2Controller: Game2ScreenController;
+	private game2IntroController: Game2IntroScreenController;
+	private game2EndController: Game2EndScreenController;
 	private resultsController: GameOverScreenController;
 	private morningController: MorningEventsScreenController;
 	private minigame1RaidController: Minigame1RaidController;
@@ -37,6 +41,8 @@ class App implements ScreenSwitcher {
 		this.audioManager = new AudioManager();
 		this.menuController = new MainMenuScreenController(this);
 		this.game2Controller = new Game2ScreenController(this);
+		this.game2IntroController = new Game2IntroScreenController(this);
+		this.game2EndController = new Game2EndScreenController(this);
 		this.gameController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
 		this.resultsController = new GameOverScreenController(this, this.audioManager);
 		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);		
@@ -48,6 +54,8 @@ class App implements ScreenSwitcher {
 		this.layer.add(this.menuController.getView().getGroup());
 		this.layer.add(this.gameController.getView().getGroup());
 		this.layer.add(this.game2Controller.getView().getGroup());
+		this.layer.add(this.game2IntroController.getView().getGroup());
+		this.layer.add(this.game2EndController.getView().getGroup());
 		this.layer.add(this.resultsController.getView().getGroup());
 		this.layer.add(this.morningController.getView().getGroup());
 		this.layer.add(this.minigame1RaidController.getView().getGroup());
@@ -64,6 +72,8 @@ class App implements ScreenSwitcher {
 		this.gameController.hide();
 		this.resultsController.hide();
 		this.game2Controller.hide();
+		this.game2IntroController.hide();
+		this.game2EndController.hide();
 		this.morningController.hide();
 		this.minigame1RaidController.hide();
 
@@ -78,9 +88,19 @@ class App implements ScreenSwitcher {
 				this.gameController.startGame();
 				break;
 
+			case "minigame2_intro":
+				// Show the introduction screen for minigame 2
+				this.game2IntroController.show();
+				break;
+
 			case "minigame2":
 				// Start the second minigame
 				this.game2Controller.startGame2();
+				break;
+
+			case "minigame2_end":
+				// Show the end screen for minigame 2
+				this.game2EndController.showResults(screen.emusKilled, screen.reason);
 				break;
 
 			case "morning":

@@ -1,13 +1,17 @@
+export type ObstacleType = "rock" | "bush";
+
 export class ObstacleModel {
   public x: number;
   public y: number;
   public w: number;
   public h: number;
-  constructor(x: number, y: number, w: number, h: number) {
+  public type: ObstacleType;
+  constructor(x: number, y: number, w: number, h: number, type: ObstacleType = "rock") {
     this.x = x;
     this.y = y;
     this.w = w;
     this.h = h;
+    this.type = type;
   }
 
   // box: center coordinates x,y and width/height

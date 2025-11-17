@@ -13,7 +13,7 @@ export class EmuController {
     this.view = new EmuView(this.model);
   }
 
-  update(obstacles: ObstacleModel[], stageWidth: number, stageHeight: number) {
+  update(obstacles: ObstacleModel[], stageWidth: number, stageHeight: number, gameAreaY: number = 0, gameAreaHeight: number = stageHeight) {
     if (!this.model.active) return;
 
     // Predict next position based on current direction
@@ -28,9 +28,9 @@ export class EmuController {
     const originalNextX = nextX;
     const originalNextY = nextY;
 
-    // Clamp position within stage boundaries
+    // Clamp position within game area boundaries (accounting for HUD)
     nextX = Math.max(radius, Math.min(stageWidth - radius, nextX));
-    nextY = Math.max(radius, Math.min(stageHeight - radius, nextY));
+    nextY = Math.max(gameAreaY + radius, Math.min(gameAreaY + gameAreaHeight - radius, nextY));
 
     const hitBoundary = nextX !== originalNextX || nextY !== originalNextY;
 
