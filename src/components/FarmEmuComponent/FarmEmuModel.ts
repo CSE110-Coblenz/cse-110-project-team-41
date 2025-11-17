@@ -1,7 +1,7 @@
 /**
  * GameScreenModel - Manages game state
  */
-export class EmuModel {
+export class FarmEmuModel {
 	private health = 100;
 
 	/**

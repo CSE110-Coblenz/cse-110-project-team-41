@@ -3,7 +3,7 @@ import Konva from "konva";
 /**
  * GameScreenView - Renders the game UI using Konva
  */
-export class EmuView {
+export class FarmEmuView {
 	private emu: Konva.Rect | null = null;
 
 	constructor(group: Konva.Group, startX: number, startY: number) {

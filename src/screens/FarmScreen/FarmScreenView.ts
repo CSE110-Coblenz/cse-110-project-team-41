@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import {STAGE_WIDTH, STAGE_HEIGHT, PLANTER_WIDTH} from "../../constants.ts";
 import {FarmPlanterController} from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
-import {EmuController} from "../../components/EmuComponent/EmuController.ts";
+import {FarmEmuController} from "../../components/FarmEmuComponent/FarmEmuController.ts";
 
 /**
  * GameScreenView - Renders the game UI using Konva
@@ -12,7 +12,7 @@ export class FarmScreenView implements View {
 	private player: Konva.Rect | null = null;
 	private scoreText: Konva.Text;
 	private startDayButton: Konva.Text;
-	private registerEmu: (emu: EmuController) => void = null;
+	private registerEmu: (emu: FarmEmuController) => void = null;
 	private removeEmus: () => void = null;
 	private timerText: Konva.Text;
 	private roundText: Konva.Text;
@@ -21,7 +21,7 @@ export class FarmScreenView implements View {
 		handleKeydown: (event: KeyboardEvent) => void,
 		handleKeyup: (event: KeyboardEvent) => void,
 		handleStartDay: () => void,
-		registerEmu: (emu: EmuController) => void,
+		registerEmu: (emu: FarmEmuController) => void,
 		removeEmus: () => void,
 		registerPlanter: (planter: FarmPlanterController) => void,
 	) {
@@ -116,7 +116,7 @@ export class FarmScreenView implements View {
 		if (!this.registerEmu) return;
 
 		for (let i = 0; i < n; i++) {
-			const emu = new EmuController(this.group, Math.random() * STAGE_WIDTH, Math.random() * STAGE_HEIGHT);
+			const emu = new FarmEmuController(this.group, Math.random() * STAGE_WIDTH, Math.random() * STAGE_HEIGHT);
 			this.registerEmu(emu);
 		}
 	}

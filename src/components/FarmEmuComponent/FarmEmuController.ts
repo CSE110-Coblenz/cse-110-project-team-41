@@ -1,14 +1,14 @@
-import { EmuModel } from "./EmuModel.ts";
-import { EmuView } from "./EmuView.ts";
+import { FarmEmuModel } from "./FarmEmuModel.ts";
+import { FarmEmuView } from "./FarmEmuView.ts";
 import {EMU_SPEED, EMU_WALK_RANDOMIZATION} from "../../constants.ts";
 import Konva from "konva";
 
 /**
  * GameScreenController - Coordinates game logic between Model and View
  */
-export class EmuController {
-	private model: EmuModel;
-	private view: EmuView;
+export class FarmEmuController {
+	private model: FarmEmuModel;
+	private view: FarmEmuView;
 	private lastTickTime: number | null = null;
 
 	private randomMove: [number, number] = [0, 0];
@@ -18,8 +18,8 @@ export class EmuController {
 	private targetY = 0;
 
 	constructor(group: Konva.Group, startX: number, startY: number) {
-		this.model = new EmuModel();
-		this.view = new EmuView(group, startX, startY);
+		this.model = new FarmEmuModel();
+		this.view = new FarmEmuView(group, startX, startY);
 
 		requestAnimationFrame(this.gameLoop);
 	}

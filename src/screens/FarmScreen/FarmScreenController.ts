@@ -1,4 +1,4 @@
-import { EmuController } from "../../components/EmuComponent/EmuController.ts";
+import { FarmEmuController } from "../../components/FarmEmuComponent/FarmEmuController.ts";
 import type { FarmPlanterController } from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
 import { GAME_DURATION, ONE_OVER_ROOT_TWO, PLAYER_SPEED } from "../../constants.ts";
 import { GameStatusController } from "../../controllers/GameStatusController.ts";
@@ -20,7 +20,7 @@ export class FarmScreenController extends ScreenController {
 
 	private status: GameStatusController;
 	private audio: AudioManager;
-	private emus: EmuController[] = [];
+	private emus: FarmEmuController[] = [];
 	private planters: FarmPlanterController[] = [];
 
 	private playerDirectionX: number = 0;
@@ -39,7 +39,7 @@ export class FarmScreenController extends ScreenController {
 			(event: KeyboardEvent) => this.handleKeydown(event),
 			(event: KeyboardEvent) => this.handleKeyup(event),
 			() => this.handleEndDay(),
-			(emu: EmuController) => this.registerEmu(emu),
+			(emu: FarmEmuController) => this.registerEmu(emu),
 			() => this.removeEmus(),
 			(planter: FarmPlanterController) => this.registerPlanter(planter),
 		);
@@ -179,7 +179,7 @@ export class FarmScreenController extends ScreenController {
 		// });
 	}
 
-	private registerEmu(emu: EmuController): void {
+	private registerEmu(emu: FarmEmuController): void {
 		this.emus.push(emu);
 	}
 
