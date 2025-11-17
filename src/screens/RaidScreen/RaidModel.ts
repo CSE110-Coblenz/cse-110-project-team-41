@@ -15,7 +15,7 @@ export const TILE_TYPE = {
 	EGG: 4, // <-- ADDED: A tile with an emu egg
 };
 
-export class Minigame1RaidModel {
+export class RaidModel {
 	public timeRemaining: number;
 	public playerPosition: { x: number; y: number }; // Player's position in tile coordinates
 	public mazeLayout: number[][]; // 2D array representing the maze

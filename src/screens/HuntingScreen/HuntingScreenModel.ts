@@ -1,5 +1,5 @@
 // src/screens/Game1Screen/Game2ScreenModel.ts
-export class Game2ScreenModel {
+export class HuntingScreenModel {
   private defeat = 0;
   private timeRemaining = 60; // 1 minute in seconds
   private startTime: number = 0;

@@ -2,17 +2,17 @@ import { ScreenController } from "../../types";
 import type { ScreenSwitcher } from "../../types";
 import { GameStatusController } from "../../controllers/GameStatusController";
 import {
-	Minigame1RaidModel,
+	RaidModel,
 	TILE_TYPE,
 	EGG_COUNT,
 	MAZE_WIDTH,
 	MAZE_HEIGHT,
-} from "./Minigame1RaidModel";
-import { Minigame1RaidView } from "./Minigame1RaidView";
+} from "./RaidModel";
+import { RaidView } from "./RaidView";
 
-export class Minigame1RaidController extends ScreenController {
-	private model: Minigame1RaidModel;
-	private view: Minigame1RaidView;
+export class RaidController extends ScreenController {
+	private model: RaidModel;
+	private view: RaidView;
 	private screenSwitcher: ScreenSwitcher;
 	private gameStatus: GameStatusController;
 	private gameTimer: number | null = null;
@@ -24,8 +24,8 @@ export class Minigame1RaidController extends ScreenController {
 		super();
 		this.screenSwitcher = screenSwitcher;
 		this.gameStatus = gameStatus;
-		this.model = new Minigame1RaidModel();
-		this.view = new Minigame1RaidView();
+		this.model = new RaidModel();
+		this.view = new RaidView();
 
 		window.addEventListener("keydown", (e) => this.handleKeyDown(e));
 	}
@@ -191,7 +191,7 @@ export class Minigame1RaidController extends ScreenController {
 		}, 5000); // Increased to 5s to give time to read the longer message
 	}
 
-	getView(): Minigame1RaidView {
+	getView(): RaidView {
 		return this.view;
 	}
 }

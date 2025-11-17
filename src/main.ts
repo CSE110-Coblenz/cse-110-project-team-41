@@ -2,15 +2,15 @@ import Konva from "konva";
 import type { ScreenSwitcher, Screen } from "./types.ts";
 import { MainMenuScreenController } from "./screens/MainMenuScreen/MainMenuScreenController.ts";
 import { FarmScreenController } from "./screens/FarmScreen/FarmScreenController.ts";
-import { Game2ScreenController } from "./screens/Game2Screen/Game2ScreenContoller.ts";
-import { Game2IntroScreenController } from "./screens/Game2IntroScreen/Game2IntroScreenController.ts";
-import { Game2EndScreenController } from "./screens/Game2EndScreen/Game2EndScreenController.ts";
+import { HuntingScreenController } from "./screens/HuntingScreen/HuntingScreenContoller.ts";
+import { HuntingIntroScreenController } from "./screens/HuntingIntroScreen/HuntingIntroScreenController.ts";
+import { HuntingEndScreenController } from "./screens/HuntingEndScreen/HuntingEndScreenController.ts";
 import { GameOverScreenController } from "./screens/GameOverScreen/GameOverScreenController.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { GameStatusController } from "./controllers/GameStatusController.ts";
 import { MorningEventsScreenController } from "./screens/MorningEventsScreen/MorningEventsScreenController.ts";
 import { AudioManager } from "./services/AudioManager.ts";
-import { Minigame1RaidController } from "./screens/Minigame1Screen/Minigame1RaidController.ts";
+import { RaidController } from "./screens/RaidScreen/RaidController.ts";
 
 class App implements ScreenSwitcher {
 	private stage: Konva.Stage;
@@ -19,13 +19,13 @@ class App implements ScreenSwitcher {
 	private gameStatusController: GameStatusController;
 	private audioManager: AudioManager;
 	private menuController: MainMenuScreenController;
-	private gameController: FarmScreenController;
-	private game2Controller: Game2ScreenController;
-	private game2IntroController: Game2IntroScreenController;
-	private game2EndController: Game2EndScreenController;
+	private farmController: FarmScreenController;
+	private huntingController: HuntingScreenController;
+	private huntingIntroController: HuntingIntroScreenController;
+	private huntingEndController: HuntingEndScreenController;
 	private resultsController: GameOverScreenController;
 	private morningController: MorningEventsScreenController;
-	private minigame1RaidController: Minigame1RaidController;
+	private raidController: RaidController;
 
 	constructor(container: string) {
 		this.stage = new Konva.Stage({
@@ -40,25 +40,25 @@ class App implements ScreenSwitcher {
 		this.gameStatusController = new GameStatusController();
 		this.audioManager = new AudioManager();
 		this.menuController = new MainMenuScreenController(this);
-		this.game2Controller = new Game2ScreenController(this);
-		this.game2IntroController = new Game2IntroScreenController(this);
-		this.game2EndController = new Game2EndScreenController(this);
-		this.gameController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
+		this.huntingController = new HuntingScreenController(this);
+		this.huntingIntroController = new HuntingIntroScreenController(this);
+		this.huntingEndController = new HuntingEndScreenController(this);
+		this.farmController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
 		this.resultsController = new GameOverScreenController(this, this.audioManager);
 		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);		
-		this.minigame1RaidController = new Minigame1RaidController(
+		this.raidController = new RaidController(
 			this,
 			this.gameStatusController
 		);
 
 		this.layer.add(this.menuController.getView().getGroup());
-		this.layer.add(this.gameController.getView().getGroup());
-		this.layer.add(this.game2Controller.getView().getGroup());
-		this.layer.add(this.game2IntroController.getView().getGroup());
-		this.layer.add(this.game2EndController.getView().getGroup());
+		this.layer.add(this.farmController.getView().getGroup());
+		this.layer.add(this.huntingController.getView().getGroup());
+		this.layer.add(this.huntingIntroController.getView().getGroup());
+		this.layer.add(this.huntingEndController.getView().getGroup());
 		this.layer.add(this.resultsController.getView().getGroup());
 		this.layer.add(this.morningController.getView().getGroup());
-		this.layer.add(this.minigame1RaidController.getView().getGroup());
+		this.layer.add(this.raidController.getView().getGroup());
 
 		this.layer.draw();
 
@@ -69,13 +69,13 @@ class App implements ScreenSwitcher {
 
 	switchToScreen(screen: Screen): void {
 		this.menuController.hide();
-		this.gameController.hide();
+		this.farmController.hide();
 		this.resultsController.hide();
-		this.game2Controller.hide();
-		this.game2IntroController.hide();
-		this.game2EndController.hide();
+		this.huntingController.hide();
+		this.huntingIntroController.hide();
+		this.huntingEndController.hide();
 		this.morningController.hide();
-		this.minigame1RaidController.hide();
+		this.raidController.hide();
 
 		switch (screen.type) {
 			case "main_menu":
@@ -85,22 +85,23 @@ class App implements ScreenSwitcher {
 			case "farm":
 				// Start the game (which also shows the game screen)
 				this.audioManager.playBgm("farm");
-				this.gameController.startGame();
+				this.farmController.startGame();
+				this.farmController.startRound();
 				break;
 
 			case "minigame2_intro":
 				// Show the introduction screen for minigame 2
-				this.game2IntroController.show();
+				this.huntingIntroController.show();
 				break;
 
 			case "minigame2":
 				// Start the second minigame
-				this.game2Controller.startGame2();
+				this.huntingController.startGame2();
 				break;
 
 			case "minigame2_end":
 				// Show the end screen for minigame 2
-				this.game2EndController.showResults(screen.emusKilled, screen.reason);
+				this.huntingEndController.showResults(screen.emusKilled, screen.reason);
 				break;
 
 			case "morning":
@@ -111,11 +112,11 @@ class App implements ScreenSwitcher {
 			case "game_over":
 				// Show results with the final score
 				this.audioManager.playBgm("gameover");
-				this.gameController.startGame();
+				this.farmController.startGame();
 				break;
 
 			case "minigame1_raid":
-				this.minigame1RaidController.startGame();
+				this.raidController.startGame();
 				break;
 		}
 	}

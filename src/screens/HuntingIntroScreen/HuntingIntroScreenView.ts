@@ -38,7 +38,7 @@ function makeButton(
   return group;
 }
 
-export class Game2IntroScreenView implements View {
+export class HuntingIntroScreenView implements View {
   private group: Konva.Group;
 
   constructor(onStart: () => void) {

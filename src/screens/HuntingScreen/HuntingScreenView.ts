@@ -2,7 +2,7 @@
 import Konva from "konva";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants";
 
-export class Game2ScreenView {
+export class HuntingScreenView {
   private group: Konva.Group;
   private hudBanner: Konva.Rect;
   private ammoLabelText: Konva.Text;

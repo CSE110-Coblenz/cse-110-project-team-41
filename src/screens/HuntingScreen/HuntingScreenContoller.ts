@@ -1,8 +1,8 @@
 // src/screens/Game2Screen/Game2ScreenController.ts
 import { ScreenController } from "../../types";
 import type { ScreenSwitcher } from "../../types";
-import { Game2ScreenModel } from "./Game2ScreenModel";
-import { Game2ScreenView } from "./Game2ScreenView";
+import { HuntingScreenModel } from "./HuntingScreenModel";
+import { HuntingScreenView } from "./HuntingScreenView";
 import { PlayerController } from "../../components/Player/PlayerController";
 import { ObstacleModel } from "../../components/Obstacle/ObstacleModel";
 import { ObstacleView } from "../../components/Obstacle/ObstacleView";
@@ -15,9 +15,9 @@ const HUD_HEIGHT = 80; // Height of the HUD banner
 const GAME_AREA_Y = HUD_HEIGHT; // Game area starts below HUD
 const GAME_AREA_HEIGHT = STAGE_HEIGHT - HUD_HEIGHT; // Available game area height
 
-export class Game2ScreenController extends ScreenController {
-  private model: Game2ScreenModel;
-  private view: Game2ScreenView;
+export class HuntingScreenController extends ScreenController {
+  private model: HuntingScreenModel;
+  private view: HuntingScreenView;
   private screenSwitcher: ScreenSwitcher;
   private running = false;
 
@@ -33,11 +33,11 @@ export class Game2ScreenController extends ScreenController {
   constructor(screenSwitcher: ScreenSwitcher) {
     super();
     this.screenSwitcher = screenSwitcher;
-    this.model = new Game2ScreenModel();
-    this.view = new Game2ScreenView();
+    this.model = new HuntingScreenModel();
+    this.view = new HuntingScreenView();
   }
 
-  getView(): Game2ScreenView {
+  getView(): HuntingScreenView {
     return this.view;
   }
 

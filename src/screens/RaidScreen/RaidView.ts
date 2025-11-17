@@ -1,12 +1,12 @@
 import Konva from "konva";
 import type { View } from "../../types";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants";
-import { TILE_TYPE, MAZE_WIDTH, MAZE_HEIGHT } from "./Minigame1RaidModel";
+import { TILE_TYPE, MAZE_WIDTH, MAZE_HEIGHT } from "./RaidModel";
 
 const TILE_WIDTH = STAGE_WIDTH / MAZE_WIDTH;
 const TILE_HEIGHT = STAGE_HEIGHT / MAZE_HEIGHT;
 
-export class Minigame1RaidView implements View {
+export class RaidView implements View {
 	private group: Konva.Group;
 	private timerText: Konva.Text;
 	private eggCountText: Konva.Text;

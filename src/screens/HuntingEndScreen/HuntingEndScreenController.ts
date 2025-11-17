@@ -1,18 +1,18 @@
 import { ScreenController } from "../../types";
 import type { ScreenSwitcher } from "../../types";
-import { Game2EndScreenView } from "./Game2EndScreenView";
+import { HuntingEndScreenView } from "./HuntingEndScreenView";
 
-export class Game2EndScreenController extends ScreenController {
-  private view: Game2EndScreenView;
+export class HuntingEndScreenController extends ScreenController {
+  private view: HuntingEndScreenView;
   private screenSwitcher: ScreenSwitcher;
 
   constructor(screenSwitcher: ScreenSwitcher) {
     super();
     this.screenSwitcher = screenSwitcher;
-    this.view = new Game2EndScreenView(() => this.handleContinueClick());
+    this.view = new HuntingEndScreenView(() => this.handleContinueClick());
   }
 
-  getView(): Game2EndScreenView {
+  getView(): HuntingEndScreenView {
     return this.view;
   }
 

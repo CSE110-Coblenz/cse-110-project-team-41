@@ -1,12 +1,12 @@
-import { ScreenController } from "../../types.ts";
-import type { ScreenSwitcher } from "../../types.ts";
-import { FarmScreenModel } from "./FarmScreenModel.ts";
-import { FarmScreenView } from "./FarmScreenView.ts";
+import { EmuController } from "../../components/EmuComponent/EmuController.ts";
+import type { FarmPlanterController } from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
+import { GAME_DURATION, ONE_OVER_ROOT_TWO, PLAYER_SPEED } from "../../constants.ts";
 import { GameStatusController } from "../../controllers/GameStatusController.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
-import {ONE_OVER_ROOT_TWO, PLAYER_SPEED, STAGE_HEIGHT, STAGE_WIDTH, GAME_DURATION} from "../../constants.ts";
-import {EmuController} from "../../components/EmuComponent/EmuController.ts";
-import type {FarmPlanterController} from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
+import type { ScreenSwitcher } from "../../types.ts";
+import { ScreenController } from "../../types.ts";
+import { FarmScreenModel } from "./FarmScreenModel.ts";
+import { FarmScreenView } from "./FarmScreenView.ts";
 
 /**
  * GameScreenController - Coordinates game logic between Model and View

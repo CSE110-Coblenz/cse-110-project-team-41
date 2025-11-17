@@ -38,7 +38,7 @@ function makeButton(
   return group;
 }
 
-export class Game2EndScreenView implements View {
+export class HuntingEndScreenView implements View {
   private group: Konva.Group;
   private titleText: Konva.Text;
   private messageText: Konva.Text;
