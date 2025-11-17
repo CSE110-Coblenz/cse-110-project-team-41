@@ -19,7 +19,8 @@ export type Screen =
 	| { type: "farm" }
 	| { type: "minigame2" }
 	| { type: "morning" }
-	| { type: "game_over"; score: number };
+	| { type: "game_over"; score: number }
+	| { type: "minigame1_raid" };
 
 export abstract class ScreenController {
 	abstract getView(): View;
