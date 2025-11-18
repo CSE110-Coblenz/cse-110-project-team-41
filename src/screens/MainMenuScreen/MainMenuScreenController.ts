@@ -1,6 +1,7 @@
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { MainMenuScreenView } from "./MainMenuScreenView.ts";
+import { GameIntroController } from "../GameIntroScreen/GameIntroScreenController";
 
 /**
  * MenuScreenController - Handles menu interactions
@@ -28,6 +29,12 @@ export class MainMenuScreenController extends ScreenController {
 
 	private handleStartClick3(): void {
 		this.screenSwitcher.switchToScreen({type: "minigame2_intro"})
+	}
+
+	// Handle "Start Game" button click
+	onStartGameClick(): void {
+		// Transition to the GameIntroScreen
+		this.screenSwitcher.switchTo("intro");
 	}
 
 	/**

@@ -11,6 +11,7 @@ import { GameStatusController } from "./controllers/GameStatusController.ts";
 import { MorningEventsScreenController } from "./screens/MorningEventsScreen/MorningEventsScreenController.ts";
 import { AudioManager } from "./services/AudioManager.ts";
 import { RaidController } from "./screens/RaidScreen/RaidController.ts";
+import { GameIntroController } from "./screens/GameIntroScreen/GameIntroScreenController";
 
 class App implements ScreenSwitcher {
 	private stage: Konva.Stage;
@@ -20,16 +21,11 @@ class App implements ScreenSwitcher {
 	private audioManager: AudioManager;
 	private menuController: MainMenuScreenController;
 	private farmController: FarmScreenController;
-	private huntingController: HuntingScreenController;
-	private huntingIntroController: HuntingIntroScreenController;
-	private huntingEndController: HuntingEndScreenController;
-	private resultsController: GameOverScreenController;
-	private morningController: MorningEventsScreenController;
-	private raidController: RaidController;
+	private introController: GameIntroController;
 
-	constructor(container: string) {
+	constructor() {
 		this.stage = new Konva.Stage({
-			container,
+			container: "game-container",
 			width: STAGE_WIDTH,
 			height: STAGE_HEIGHT,
 		});
@@ -37,90 +33,43 @@ class App implements ScreenSwitcher {
 		this.layer = new Konva.Layer();
 		this.stage.add(this.layer);
 
-		this.gameStatusController = new GameStatusController();
 		this.audioManager = new AudioManager();
+		this.gameStatusController = new GameStatusController();
+
+		// Initialize controllers
 		this.menuController = new MainMenuScreenController(this);
-		this.huntingController = new HuntingScreenController(this);
-		this.huntingIntroController = new HuntingIntroScreenController(this);
-		this.huntingEndController = new HuntingEndScreenController(this);
-		this.farmController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
-		this.resultsController = new GameOverScreenController(this, this.audioManager);
-		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
-		this.farmController.setMorningController(this.morningController);
-		this.raidController = new RaidController(
-			this,
-			this.gameStatusController
-		);
+		this.farmController = new FarmScreenController(this.stage);
+		this.introController = new GameIntroController(this.stage, () => {
+			this.switchTo("market");
+		});
 
-		this.layer.add(this.menuController.getView().getGroup());
-		this.layer.add(this.farmController.getView().getGroup());
-		this.layer.add(this.huntingController.getView().getGroup());
-		this.layer.add(this.huntingIntroController.getView().getGroup());
-		this.layer.add(this.huntingEndController.getView().getGroup());
-		this.layer.add(this.resultsController.getView().getGroup());
-		this.layer.add(this.morningController.getView().getGroup());
-		this.layer.add(this.raidController.getView().getGroup());
-
-		this.layer.draw();
-
-		// Start with menu screen visible
-		this.menuController.getView().show();
-		this.audioManager.playBgm("menu");
+		// Start with the main menu
+		this.switchTo("menu");
 	}
 
-	switchToScreen(screen: Screen): void {
-		this.menuController.hide();
-		this.farmController.hide();
-		this.resultsController.hide();
-		this.huntingController.hide();
-		this.huntingIntroController.hide();
-		this.huntingEndController.hide();
-		this.morningController.hide();
-		this.raidController.hide();
+	// Switch between screens
+	switchTo(screen: string): void {
+		this.layer.destroyChildren(); // Clear the current screen
 
-		switch (screen.type) {
-			case "main_menu":
-				this.menuController.show();
+		switch (screen) {
+			case "menu":
+				this.menuController.onStartGameClick = this.menuController.onStartGameClick.bind(this);
+				this.menuController.onStartGameClick();
 				break;
 
-			case "farm":
-				// Start the game (which also shows the game screen)
-				this.audioManager.playBgm("farm");
-				this.farmController.startGame();
-				this.farmController.startRound();
+			case "intro":
+				this.introController.render();
 				break;
 
-			case "minigame2_intro":
-				// Show the introduction screen for minigame 2
-				this.huntingIntroController.show();
+			case "market":
+				console.log("Switching to the market screen...");
+				// Add logic to initialize and render the market screen
 				break;
 
-			case "minigame2":
-				// Start the second minigame
-				this.huntingController.startGame2();
-				break;
-
-			case "minigame2_end":
-				// Show the end screen for minigame 2
-				this.huntingEndController.showResults(screen.emusKilled, screen.reason);
-				break;
-
-			case "morning":
-				this.audioManager.playBgm("morning");
-				this.morningController.show();
-				break;
-
-			case "game_over":
-				// Show results with the final score
-				this.audioManager.playBgm("gameover");
-				this.farmController.startGame();
-				break;
-
-			case "minigame1_raid":
-				this.raidController.startGame();
-				break;
+			default:
+				console.error(`Unknown screen: ${screen}`);
 		}
 	}
 }
 
-new App("container");
+const app = new App("container");
