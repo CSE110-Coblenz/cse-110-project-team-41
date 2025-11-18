@@ -53,6 +53,10 @@ export class GameStatusController {
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
     }
 
+	public saveState(): void {
+		this.save();
+	}
+
     private load(): PersistedState | null {
         try {
             const str = localStorage.getItem(STORAGE_KEY);

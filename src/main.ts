@@ -45,7 +45,8 @@ class App implements ScreenSwitcher {
 		this.huntingEndController = new HuntingEndScreenController(this);
 		this.farmController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
 		this.resultsController = new GameOverScreenController(this, this.audioManager);
-		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);		
+		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
+		this.farmController.setMorningController(this.morningController);
 		this.raidController = new RaidController(
 			this,
 			this.gameStatusController
