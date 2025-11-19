@@ -11,28 +11,56 @@ export class GameOverScreenView implements View {
 	private finalScoreText: Konva.Text;
 	private leaderboardText: Konva.Text;
 	private nameInput: HTMLInputElement;
-	private name: string;
+	private name: string = "Anonymous";
+	private nameInputContainer: HTMLDivElement;
 
 	constructor(
 		onPlayAgainClick: () => void, 
 		onNameEntered: (name: string) => void
 	) {
 		this.group = new Konva.Group({ visible: false });
-		this.name = "Anonymous";
+		
+		// Create container for name input UI
+		this.nameInputContainer = document.createElement("div");
+		Object.assign(this.nameInputContainer.style, {
+			position: "absolute",
+			display: "none",
+			padding: "20px",
+			borderRadius: "12px",
+			background: "rgba(255, 255, 255, 0.9)",
+			boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+			textAlign: "center",
+			transform: "translate(-50%, -50%)",
+		});
 
+		// Add description text
+		const desc = document.createElement("div");
+		desc.innerText = "Write down the name you want to show on the leaderboard:";
+		Object.assign(desc.style, {
+			fontSize: "18px",
+			marginBottom: "10px",
+			color: "#333",
+			fontFamily: "Arial",
+		});
+		this.nameInputContainer.appendChild(desc);
+
+		// Create input box
 		this.nameInput = document.createElement("input");
 		this.nameInput.type = "text";
-		this.nameInput.placeholder = "Enter your name";
 		Object.assign(this.nameInput.style, {
-		position: "absolute",
-		fontSize: "20px",
-		padding: "5px 10px",
-		borderRadius: "6px",
-		border: "2px solid #666",
-		display: "none",
+			width: "260px",
+			fontSize: "20px",
+			padding: "8px 12px",
+			borderRadius: "8px",
+			border: "2px solid #888",
+			outline: "none",
 		});
-		document.body.appendChild(this.nameInput);
+		this.nameInputContainer.appendChild(this.nameInput);
 
+		// Attach to body
+		document.body.appendChild(this.nameInputContainer);
+
+		// Prevent Konva canvas stealing events
 		this.nameInput.addEventListener("mousedown", (e) => e.stopPropagation());
 		this.nameInput.addEventListener("click", (e) => e.stopPropagation());
 
@@ -150,14 +178,11 @@ export class GameOverScreenView implements View {
 	}
 
 	showNameInput(): void {
-		const left = STAGE_WIDTH / 2 - 150; 
-		const top = 360; 
-		this.nameInput.value = "";
-		this.nameInput.style.left = `${left}px`;
-		this.nameInput.style.top = `${top}px`;
-		this.nameInput.style.width = `300px`;
-		this.nameInput.style.display = "block";
+		this.nameInputContainer.style.left = "50%";
+		this.nameInputContainer.style.top = "40%";
+		this.nameInputContainer.style.display = "block";
 
+		this.nameInput.value = "";
 		this.nameInput.focus();
 		this.nameInput.select();
 	}
@@ -171,8 +196,8 @@ export class GameOverScreenView implements View {
 		this.showNameInput();
 	}
 	hideInput(): void {
-   		this.nameInput.style.display = "none";
-  	}
+		this.nameInputContainer.style.display = "none";	
+	}
 	/**
 	 * Hide the screen
 	 */
