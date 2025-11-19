@@ -9,17 +9,33 @@ import { STAGE_WIDTH } from "../../constants.ts";
 export class GameOverScreenView implements View {
 	private group: Konva.Group;
 	private finalScoreText: Konva.Text;
-	private leaderboardText: Konva.Text;
+	private leaderboardGroup: Konva.Group;
 	private nameInput: HTMLInputElement;
 	private name: string = "Anonymous";
 	private nameInputContainer: HTMLDivElement;
+
+	// Fixed X positions for each column center/edge
+    private static readonly COLUMN_X = {
+        RANK: STAGE_WIDTH / 2 - 330, // Right edge of Rank column
+        NAME: STAGE_WIDTH / 2 - 290, // Left edge of Name column
+        SCORE: STAGE_WIDTH / 2 + 100,  // Right edge of Score column
+        DAYS: STAGE_WIDTH / 2 + 200, // Right edge of Days Survived column
+        DATE: STAGE_WIDTH / 2 + 250, // Left edge of Date column
+    };
+    
+    // Starting Y position for the header
+    private static readonly START_Y = 160;
+    // Line spacing
+    private static readonly LINE_HEIGHT = 25;
 
 	constructor(
 		onPlayAgainClick: () => void, 
 		onNameEntered: (name: string) => void
 	) {
 		this.group = new Konva.Group({ visible: false });
-		
+		this.leaderboardGroup = new Konva.Group(); 
+        this.group.add(this.leaderboardGroup); 
+
 		// Create container for name input UI
 		this.nameInputContainer = document.createElement("div");
 		Object.assign(this.nameInputContainer.style, {
@@ -104,19 +120,8 @@ export class GameOverScreenView implements View {
 		});
 		this.group.add(this.finalScoreText);
 
-		// Leaderboard display
-		this.leaderboardText = new Konva.Text({
-			x: STAGE_WIDTH / 2,
-			y: 160, 
-			text: "TOP SCORES\n(Play to see your scores!)",
-			fontSize: 18,
-			fontFamily: "Courier New, monospace", 
-			fill: "#333", // Dark color
-			align: "center",
-			lineHeight: 1.3,
-		});
-		this.leaderboardText.offsetX(this.leaderboardText.width() / 2);
-		this.group.add(this.leaderboardText);
+		// Initialize static header
+        this.renderLeaderboardHeader();
 
 		// Play Again button (grouped) - moved down to make room for leaderboard
 		const playAgainButtonGroup = new Konva.Group();
@@ -173,32 +178,174 @@ export class GameOverScreenView implements View {
 	}
 
 	/**
+     * Renders the header row and separator line
+     */
+    private renderLeaderboardHeader(): void {
+        const style = {
+            fontSize: 18,
+            fontFamily: "Courier New, monospace",
+            fill: "#333",
+        };
+
+        // Clear previous header/data
+        this.leaderboardGroup.destroyChildren();
+
+        // 1. Rank Header (Right-aligned to its column edge)
+        const rankHeader = new Konva.Text({
+            ...style,
+            x: GameOverScreenView.COLUMN_X.RANK,
+            y: GameOverScreenView.START_Y,
+            text: "RANK",
+            align: "right",
+        });
+        rankHeader.offsetX(rankHeader.width());
+        this.leaderboardGroup.add(rankHeader);
+
+        // 2. Name Header (Left-aligned to its column edge)
+        this.leaderboardGroup.add(new Konva.Text({
+            ...style,
+            x: GameOverScreenView.COLUMN_X.NAME,
+            y: GameOverScreenView.START_Y,
+            text: "NAME",
+            align: "left",
+        }));
+        
+        // 3. Score Header (Right-aligned to its column edge)
+        const scoreHeader = new Konva.Text({
+            ...style,
+            x: GameOverScreenView.COLUMN_X.SCORE,
+            y: GameOverScreenView.START_Y,
+            text: "SCORE",
+            align: "right",
+        });
+        scoreHeader.offsetX(scoreHeader.width());
+        this.leaderboardGroup.add(scoreHeader);
+        
+        // 4. Days Survived Header (Right-aligned to its column edge)
+        const daysHeader = new Konva.Text({
+            ...style,
+            x: GameOverScreenView.COLUMN_X.DAYS,
+            y: GameOverScreenView.START_Y,
+            text: "DAYS",
+            align: "right",
+        });
+        daysHeader.offsetX(daysHeader.width());
+        this.leaderboardGroup.add(daysHeader);
+        
+        // 5. Date Header (Left-aligned to its column edge)
+        this.leaderboardGroup.add(new Konva.Text({
+            ...style,
+            x: GameOverScreenView.COLUMN_X.DATE,
+            y: GameOverScreenView.START_Y,
+            text: "DATE",
+            align: "left",
+        }));
+
+        // Separator Line
+        const separatorLine = new Konva.Line({
+            points: [
+                GameOverScreenView.COLUMN_X.RANK - 50, 
+                GameOverScreenView.START_Y + GameOverScreenView.LINE_HEIGHT * 2 / 3, 
+                GameOverScreenView.COLUMN_X.DATE + 120, 
+                GameOverScreenView.START_Y + GameOverScreenView.LINE_HEIGHT * 2 / 3
+            ],
+            stroke: '#666',
+            strokeWidth: 2,
+        });
+        this.leaderboardGroup.add(separatorLine);
+    }
+
+
+	/**
 	 * Update the leaderboard display
 	 */
 	updateLeaderboard(entries: LeaderboardEntry[]): void {
+        // Clear previous entries but keep the header
+        const children = this.leaderboardGroup.getChildren();
+        // Index 6 is the first entry (children 0-5 are the header elements and separator)
+        for (let i = children.length - 1; i >= 6; i--) {
+            children[i].destroy();
+        }
+
 		if (entries.length === 0) {
-			this.leaderboardText.text("Top Scores:\n(No scores yet!)");
-		} else {
-			let text = "RANK  NAME                SCORE     DAYS SURVIVED        DATE\n";
-            text += "----------------------------------------------------------------\n"; // Increased separator length to match header
-
-            entries.forEach((entry, index) => {
-                const rankStr = String(index + 1).padEnd(4, ' ');
-                const nameStr = entry.name.substring(0, 15).padEnd(15, ' '); 
-                
-                const scoreStr = String(entry.score).padStart(8, ' ').padEnd(15, ' '); ;
-                
-                const daysStr = String(entry.survivalDays).padStart(5, ' ').padEnd(13, ' ');
-                
-                const dateStr = entry.timestamp.split(',')[0].trim();
-
-                text += `${rankStr} ${nameStr} ${scoreStr} ${daysStr} ${dateStr}\n`;
+            // Display 'No scores' message centered below the header
+            const noScoreText = new Konva.Text({
+                x: STAGE_WIDTH / 2,
+                y: GameOverScreenView.START_Y + GameOverScreenView.LINE_HEIGHT * 2,
+                text: "(No scores yet!)",
+                fontSize: 18,
+                fontFamily: "Arial",
+                fill: "#999",
+                align: "center",
             });
-            this.leaderboardText.text(text);
+            noScoreText.offsetX(noScoreText.width() / 2);
+			this.leaderboardGroup.add(noScoreText);
+		} else {
+            const dataStyle = {
+                fontSize: 18,
+                fontFamily: "Courier New, monospace", // Keep monospace for consistent vertical spacing
+                fill: "black",
+            };
+            
+            entries.forEach((entry, index) => {
+                const yPos = GameOverScreenView.START_Y + GameOverScreenView.LINE_HEIGHT * (index + 1);
+
+                // 1. Rank (Right-aligned)
+                const rankText = new Konva.Text({
+                    ...dataStyle,
+                    x: GameOverScreenView.COLUMN_X.RANK,
+                    y: yPos,
+                    text: String(index + 1),
+                    align: "right",
+                });
+                // Shift text origin to the right side of the text box (for right alignment)
+                rankText.offsetX(rankText.width());
+                this.leaderboardGroup.add(rankText);
+
+                // 2. Name (Left-aligned)
+                const nameText = new Konva.Text({
+                    ...dataStyle,
+                    x: GameOverScreenView.COLUMN_X.NAME,
+                    y: yPos,
+                    text: entry.name.substring(0, 15),
+                    align: "left",
+                });
+                this.leaderboardGroup.add(nameText);
+                
+                // 3. Score (Right-aligned)
+                const scoreText = new Konva.Text({
+                    ...dataStyle,
+                    x: GameOverScreenView.COLUMN_X.SCORE,
+                    y: yPos,
+                    text: String(entry.score),
+                    align: "right",
+                });
+                scoreText.offsetX(scoreText.width());
+                this.leaderboardGroup.add(scoreText);
+
+                // 4. Survival Days (Right-aligned)
+                const daysText = new Konva.Text({
+                    ...dataStyle,
+                    x: GameOverScreenView.COLUMN_X.DAYS,
+                    y: yPos,
+                    text: String(entry.survivalDays),
+                    align: "right",
+                });
+                daysText.offsetX(daysText.width());
+                this.leaderboardGroup.add(daysText);
+                
+                // 5. Date (Left-aligned)
+                const dateText = new Konva.Text({
+                    ...dataStyle,
+                    x: GameOverScreenView.COLUMN_X.DATE,
+                    y: yPos,
+                    text: entry.timestamp.split(',')[0].trim(),
+                    align: "left",
+                });
+                this.leaderboardGroup.add(dateText);
+            });
 		}
 
-    // Re-center after text change
-    this.leaderboardText.offsetX(this.leaderboardText.width() / 2);
     this.group.getLayer()?.draw();
 	}
 
