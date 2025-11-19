@@ -55,6 +55,13 @@ export class GameOverScreenController extends ScreenController {
 	}
 
 	private handleNameEntered(name: string): void {
+		if (name.length === 0) {
+			name = "Anonymous";
+		}
+		const MAX_NAME_LENGTH = 15; 
+		if (name.length > MAX_NAME_LENGTH) {
+			name = name.substring(0, MAX_NAME_LENGTH);
+		}
 		console.log("Controller received name:", name);
 
 		const survivalDays =this.model.getSurvivalDays();
