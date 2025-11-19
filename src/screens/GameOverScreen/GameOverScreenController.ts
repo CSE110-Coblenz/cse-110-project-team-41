@@ -6,6 +6,7 @@ import {
 } from "./GameOverScreenModel.ts";
 import { GameOverScreenView } from "./GameOverScreenView.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
+import type { GameStatusController } from "../../controllers/GameStatusController.ts";
 
 const LEADERBOARD_KEY = "farmDefenseLeaderboard";
 const MAX_LEADERBOARD_ENTRIES = 10;
@@ -17,11 +18,12 @@ export class GameOverScreenController extends ScreenController {
 	private model: GameOverScreenModel;
 	private view: GameOverScreenView;
 	private screenSwitcher: ScreenSwitcher;
-
+	private status: GameStatusController ;
 	private audio: AudioManager;
 
-	constructor(screenSwitcher: ScreenSwitcher, audio: AudioManager) {
+	constructor(screenSwitcher: ScreenSwitcher, status: GameStatusController ,audio: AudioManager) {
 		super();
+		this.status = status;
 		this.screenSwitcher = screenSwitcher;
 		this.model = new GameOverScreenModel();
 		this.view = new GameOverScreenView(
@@ -102,6 +104,7 @@ export class GameOverScreenController extends ScreenController {
 	 * Handle play again button click
 	 */
 	private handlePlayAgainClick(): void {
+		this.status.reset();
 		this.screenSwitcher.switchToScreen({ type: "main_menu" });
 	}
 
@@ -111,4 +114,5 @@ export class GameOverScreenController extends ScreenController {
 	getView(): GameOverScreenView {
 		return this.view;
 	}
+
 }

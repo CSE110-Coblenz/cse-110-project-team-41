@@ -32,12 +32,7 @@ export class GameStatusController {
             this.emuCount = saved.emuCount;
             this.emuEggs = saved.emuEggs;
         } else {
-            this.day = 1;
-            this.money = 0;
-            this.inventory = {};
-            this.emuCount = STARTING_EMU_COUNT;
-            this.emuEggs = 0;
-            this.save();
+            this.reset();
         }
     }
 
@@ -132,5 +127,17 @@ export class GameStatusController {
 	 */
 	public getEmuEggCount(): number {
 		return this.emuEggs;
+	}
+
+    /**
+	 * Resets the game status to initial values.
+	 */
+    public reset(): void {
+		this.day = 1;
+		this.money = 0;
+		this.inventory = {};
+		this.emuCount = STARTING_EMU_COUNT;
+		this.emuEggs = 0;
+		this.save(); 
 	}
 }
