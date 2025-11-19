@@ -113,7 +113,7 @@ class App implements ScreenSwitcher {
 			case "game_over":
 				// Show results with the final score
 				this.audioManager.playBgm("gameover");
-				this.farmController.startGame();
+				this.resultsController.showFinalResults(screen.survivalDays, screen.score);
 				break;
 
 			case "minigame1_raid":

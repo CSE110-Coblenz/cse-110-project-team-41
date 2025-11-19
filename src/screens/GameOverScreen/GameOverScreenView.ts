@@ -10,16 +10,53 @@ export class GameOverScreenView implements View {
 	private group: Konva.Group;
 	private finalScoreText: Konva.Text;
 	private leaderboardText: Konva.Text;
+	private nameInput: HTMLInputElement;
+	private name: string;
 
-	constructor(onPlayAgainClick: () => void) {
+	constructor(
+		onPlayAgainClick: () => void, 
+		onNameEntered: (name: string) => void
+	) {
 		this.group = new Konva.Group({ visible: false });
+		this.name = "Anonymous";
+
+		this.nameInput = document.createElement("input");
+		this.nameInput.type = "text";
+		this.nameInput.placeholder = "Enter your name";
+		Object.assign(this.nameInput.style, {
+		position: "absolute",
+		fontSize: "20px",
+		padding: "5px 10px",
+		borderRadius: "6px",
+		border: "2px solid #666",
+		display: "none",
+		});
+		document.body.appendChild(this.nameInput);
+
+		this.nameInput.addEventListener("mousedown", (e) => e.stopPropagation());
+		this.nameInput.addEventListener("click", (e) => e.stopPropagation());
+
+		this.nameInput.addEventListener("keydown", (e) => {
+			e.stopPropagation();
+			console.log("keydown on input:", e.key);
+			if (e.key === "Enter") {
+				this.name = this.nameInput.value.trim();
+				console.log("Player name set to:", this.name);
+				this.hideInput();
+				this.nameInput.blur();
+				onNameEntered(this.name); 
+			} else if (e.key === "Escape") {
+				this.hideInput();
+				this.nameInput.blur();
+			}
+		});
 
 		// "Game Over" title
 		const title = new Konva.Text({
 			x: STAGE_WIDTH / 2,
-			y: 100,
+			y: 30,
 			text: "GAME OVER!",
-			fontSize: 48,
+			fontSize: 32,
 			fontFamily: "Arial",
 			fill: "red",
 			align: "center",
@@ -30,9 +67,9 @@ export class GameOverScreenView implements View {
 		// Final score display
 		this.finalScoreText = new Konva.Text({
 			x: STAGE_WIDTH / 2,
-			y: 200,
-			text: "Final Score: 0",
-			fontSize: 36,
+			y: 100,
+			text: "Final Score: 0; Days Survived: 0",
+			fontSize: 32,
 			fontFamily: "Arial",
 			fill: "black",
 			align: "center",
@@ -42,7 +79,7 @@ export class GameOverScreenView implements View {
 		// Leaderboard display
 		this.leaderboardText = new Konva.Text({
 			x: STAGE_WIDTH / 2,
-			y: 260,
+			y: 150,
 			text: "Top Scores:\n(Play to see your scores!)",
 			fontSize: 18,
 			fontFamily: "Arial",
@@ -87,8 +124,8 @@ export class GameOverScreenView implements View {
 	/**
 	 * Update the final score display
 	 */
-	updateFinalScore(score: number): void {
-		this.finalScoreText.text(`Final Score: ${score}`);
+	updateFinalResults(survivalDays:number, score: number): void {
+		this.finalScoreText.text(`Final Score: ${score}    Days Survived: ${survivalDays}`);
 		// Re-center after text change
 		this.finalScoreText.offsetX(this.finalScoreText.width() / 2);
 		this.group.getLayer()?.draw();
@@ -98,18 +135,31 @@ export class GameOverScreenView implements View {
 	 * Update the leaderboard display
 	 */
 	updateLeaderboard(entries: LeaderboardEntry[]): void {
-		if (entries.length === 0) {
-			this.leaderboardText.text("Top Scores:\n(No scores yet!)");
-		} else {
-			let text = "Top Scores:\n";
-			entries.forEach((entry, index) => {
-				text += `${index + 1}. ${entry.score} - ${entry.timestamp}\n`;
-			});
-			this.leaderboardText.text(text);
-		}
-		// Re-center after text change
-		this.leaderboardText.offsetX(this.leaderboardText.width() / 2);
-		this.group.getLayer()?.draw();
+    if (entries.length === 0) {
+        this.leaderboardText.text("Top Scores:\n(No scores yet!)");
+    } else {
+        let text = "LEADERBOARD:\n";
+        entries.forEach((entry, index) => {
+			text += `${index + 1}. ${entry.name}: ${entry.score} pts - ${entry.survivalDays} days - ${entry.timestamp}\n`;        });
+        this.leaderboardText.text(text);
+    }
+
+    // Re-center after text change
+    this.leaderboardText.offsetX(this.leaderboardText.width() / 2);
+    this.group.getLayer()?.draw();
+	}
+
+	showNameInput(): void {
+		const left = STAGE_WIDTH / 2 - 150; 
+		const top = 360; 
+		this.nameInput.value = "";
+		this.nameInput.style.left = `${left}px`;
+		this.nameInput.style.top = `${top}px`;
+		this.nameInput.style.width = `300px`;
+		this.nameInput.style.display = "block";
+
+		this.nameInput.focus();
+		this.nameInput.select();
 	}
 
 	/**
@@ -118,14 +168,25 @@ export class GameOverScreenView implements View {
 	show(): void {
 		this.group.visible(true);
 		this.group.getLayer()?.draw();
+		this.showNameInput();
 	}
-
+	hideInput(): void {
+   		this.nameInput.style.display = "none";
+  	}
 	/**
 	 * Hide the screen
 	 */
 	hide(): void {
 		this.group.visible(false);
+		this.hideInput();  
 		this.group.getLayer()?.draw();
+	}
+
+	/**
+	 * Get the player name from input
+	 */
+	getPlayerName(): string {
+    	return (this.name || "Anonymous").trim();;
 	}
 
 	getGroup(): Konva.Group {
