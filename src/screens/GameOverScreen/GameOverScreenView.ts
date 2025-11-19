@@ -1,7 +1,7 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
 import type { LeaderboardEntry } from "./GameOverScreenModel.ts";
-import { STAGE_WIDTH } from "../../constants.ts";
+import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants.ts";
 
 /**
  * ResultsScreenView - Renders the results screen
