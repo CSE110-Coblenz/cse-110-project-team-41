@@ -54,6 +54,18 @@ export class FarmScreenController extends ScreenController {
 			() => this.handleMenuResume(),
 		);
 
+		//For the hunting menu:
+		this.view.setHuntMenuOptionHandlers(
+			() => this.handleSkipHunt(),
+			() => this.handleHuntCont()
+		)
+
+		//For the egg menu:
+		this.view.setEggMenuOptionHandlers(
+			() => this.handleSkipEgg(),
+			() => this.handleEggCont()
+		)
+
 		requestAnimationFrame(this.gameLoop);
 	}
 
@@ -198,6 +210,7 @@ export class FarmScreenController extends ScreenController {
     }
 
 	private prepareNextRound(): void {
+		this.handleMiniGames(this.status.getDay());
 		this.planters.forEach((planter) => planter.advanceDay());
 		this.model.updateSpawn();
 		this.view.spawnEmus(this.model.getSpawn());
@@ -245,9 +258,30 @@ export class FarmScreenController extends ScreenController {
 		this.view.showMenuOverlay();
 	}
 
+	//Handling options in the hunt menu:
+	private handleHuntCont(): void {
+		this.status.saveState();
+		this.screenSwitcher.switchToScreen({ type: "minigame2" });
+		this.view.hideHuntMenuOverlay();
+	}
+
+	//Handling options in the egg menu:
+	private handleEggCont(): void {
+		this.status.saveState();
+		this.screenSwitcher.switchToScreen({ type: "minigame1_raid" });
+		this.view.hideEggMenuOverlay();
+	}
+
+	//Skip for both hunt and egg games are the same:
+	private handleSkipHunt(): void {
+		this.view.hideHuntMenuOverlay();
+	}
+
+	private handleSkipEgg(): void {
+		this.view.hideEggMenuOverlay();
+	}
+
 	private handleMenuSaveAndExit(): void {
-		this.view.hideMenuOverlay();
-		this.stopTimer();
 		this.status.saveState();
 		this.screenSwitcher.switchToScreen({ type: "main_menu" });
 	}
@@ -276,6 +310,25 @@ export class FarmScreenController extends ScreenController {
 		this.updateCropDisplay();
 		onClosed?.();
 	}
+
+	//For integration of minigames into the main game:
+
+	private handleMiniGames(day: number): void {
+		if(day % 2 == 0){
+			//Make a menu screen appear
+			//Switch screen to hunting game
+			//Run the game
+			this.view.showHuntMenuOverlay();
+		}
+
+		if(day % 4 == 1 || day % 4 == 3){
+			//Make a manu screen appear
+			//Switch screen to egg game
+			//Run the game
+			this.view.showEggMenuOverlay();
+		}
+	}
+
 
     private updateCropDisplay(): void {
         this.view.updateCropCount(this.status.getItemCount("crop"));
