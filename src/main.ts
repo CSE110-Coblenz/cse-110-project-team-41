@@ -20,12 +20,12 @@ class App implements ScreenSwitcher {
 	private gameStatusController: GameStatusController;
 	private audioManager: AudioManager;
 	private menuController: MainMenuScreenController;
-	private farmController: FarmScreenController;
-	private introController: GameIntroController;
+	private farmController: FarmScreenController | null = null;
+	private introController: GameIntroController | null = null;
 
 	constructor() {
 		this.stage = new Konva.Stage({
-			container: "game-container",
+			container: "container",
 			width: STAGE_WIDTH,
 			height: STAGE_HEIGHT,
 		});
@@ -36,40 +36,80 @@ class App implements ScreenSwitcher {
 		this.audioManager = new AudioManager();
 		this.gameStatusController = new GameStatusController();
 
-		// Initialize controllers
+		// Initialize menu controller
 		this.menuController = new MainMenuScreenController(this);
-		this.farmController = new FarmScreenController(this.stage);
-		this.introController = new GameIntroController(this.stage, () => {
-			this.switchTo("market");
-		});
-
+		
 		// Start with the main menu
-		this.switchTo("menu");
+		this.switchToScreen({ type: "main_menu" });
 	}
 
-	// Switch between screens
-	switchTo(screen: string): void {
-		this.layer.destroyChildren(); // Clear the current screen
-
-		switch (screen) {
-			case "menu":
-				this.menuController.onStartGameClick = this.menuController.onStartGameClick.bind(this);
-				this.menuController.onStartGameClick();
+	// Implement ScreenSwitcher interface
+	switchToScreen(screen: Screen): void {
+		this.layer.destroyChildren();
+		
+		switch (screen.type) {
+			case "main_menu":
+				this.layer.add(this.menuController.getView().getGroup());
+				this.menuController.show();
 				break;
-
-			case "intro":
-				this.introController.render();
+			case "farm":
+				if (!this.farmController) {
+					this.farmController = new FarmScreenController(this, this.gameStatusController, this.audioManager, this.stage);
+				}
+				this.layer.add(this.farmController.getView().getGroup());
+				this.farmController.show();
 				break;
-
-			case "market":
-				console.log("Switching to the market screen...");
-				// Add logic to initialize and render the market screen
+			case "morning":
+				const morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
+				this.layer.add(morningController.getView().getGroup());
+				morningController.show();
 				break;
-
+			case "minigame2_intro":
+				const huntingIntroController = new HuntingIntroScreenController(this);
+				this.layer.add(huntingIntroController.getView().getGroup());
+				huntingIntroController.show();
+				break;
+			case "minigame2":
+				const huntingController = new HuntingScreenController(this);
+				this.layer.add(huntingController.getView().getGroup());
+				huntingController.show();
+				break;
+			case "minigame2_end":
+				const huntingEndController = new HuntingEndScreenController(this);
+				this.layer.add(huntingEndController.getView().getGroup());
+				huntingEndController.show();
+				break;
+			case "game_over":
+				const gameOverController = new GameOverScreenController(this, this.audioManager);
+				this.layer.add(gameOverController.getView().getGroup());
+				gameOverController.show();
+				break;
+			case "minigame1_raid":
+				const raidController = new RaidController(this, this.gameStatusController, this.audioManager);
+				this.layer.add(raidController.getView().getGroup());
+				raidController.show();
+				break;
 			default:
-				console.error(`Unknown screen: ${screen}`);
+				console.error(`Unknown screen type`);
 		}
+		
+		this.layer.draw();
+	}
+
+	// Show intro screen, then call the callback when complete
+	switchToIntroThen(onComplete: () => void): void {
+		// Clear layer
+		this.layer.destroyChildren();
+		
+		if (this.introController) {
+			this.introController.destroy();
+		}
+		
+		this.introController = new GameIntroController(this.stage, () => {
+			// After intro completes, call the callback
+			onComplete();
+		});
 	}
 }
 
-const app = new App("container");
+const app = new App();
