@@ -44,6 +44,7 @@ export class FarmScreenController extends ScreenController {
 			(event: KeyboardEvent) => this.handleKeydown(event),
 			(event: KeyboardEvent) => this.handleKeyup(event),
 			() => this.handleEndDay(),
+			() => this.endGame(),
 			(emu: FarmEmuController) => this.registerEmu(emu),
 			() => this.removeEmus(),
 			(planter: FarmPlanterController) => this.registerPlanter(planter),
@@ -381,6 +382,19 @@ export class FarmScreenController extends ScreenController {
 		}
 		this.activeMines.push({ node: placement.node, size: placement.size });
 		this.updateCropDisplay();
+	}
+
+	/**
+	 * End the game
+	 */
+	endGame(): void {
+		this.stopTimer();
+        this.view.clearEmus();
+		this.screenSwitcher.switchToScreen({ 
+			type: "game_over", 
+			survivalDays: this.status.getDay(),
+			score: this.getFinalScore() 
+		});
 	}
 }
 

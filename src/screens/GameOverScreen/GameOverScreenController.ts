@@ -8,7 +8,7 @@ import { GameOverScreenView } from "./GameOverScreenView.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
 
 const LEADERBOARD_KEY = "farmDefenseLeaderboard";
-const MAX_LEADERBOARD_ENTRIES = 5;
+const MAX_LEADERBOARD_ENTRIES = 10;
 
 /**
  * ResultsScreenController - Handles results screen interactions
@@ -24,35 +24,59 @@ export class GameOverScreenController extends ScreenController {
 		super();
 		this.screenSwitcher = screenSwitcher;
 		this.model = new GameOverScreenModel();
-		this.view = new GameOverScreenView(() => this.handlePlayAgainClick());
+		this.view = new GameOverScreenView(
+			() => this.handlePlayAgainClick(),
+			(name) => this.handleNameEntered(name)
+		);
 
 		this.audio = audio;
 	}
 
+	
+
 	/**
 	 * Show results screen with final score
 	 */
-	showResults(finalScore: number): void {
-		this.model.setFinalScore(finalScore);
-		this.view.updateFinalScore(finalScore);
+	showFinalResults(survivalDays: number, finalScore: number): void {
+		this.model.setFinalResults(survivalDays, finalScore);
+		this.view.updateFinalResults(survivalDays,finalScore);
 
 		// Load and update leaderboard
 		const entries = this.loadLeaderboard();
-		entries.push({
-			score: finalScore,
-			timestamp: new Date().toLocaleString(),
-		});
-		entries.sort((a, b) => b.score - a.score); // Sort descending
-		const top5 = entries.slice(0, MAX_LEADERBOARD_ENTRIES); // Keep top 5
-		this.saveLeaderboard(top5);
-		this.model.setLeaderboard(top5);
-		this.view.updateLeaderboard(top5);
+		this.model.setLeaderboard(entries);
+		this.view.updateLeaderboard(entries);
 
 		this.view.show();
 
 		// Play a game over sound effect (BGM handled by App)
 		this.audio.playSfx("gameover");
 	}
+
+	private handleNameEntered(name: string): void {
+		console.log("Controller received name:", name);
+
+		const survivalDays =this.model.getSurvivalDays();
+		const finalScore = this.model.getFinalScore();
+
+		const entries = this.loadLeaderboard();
+		entries.push({
+			name,
+			survivalDays,
+			score: finalScore,
+			timestamp: new Date().toLocaleString(),
+		});
+
+		entries.sort((a, b) => {
+			if (b.score !== a.score) return b.score - a.score;
+			return b.survivalDays - a.survivalDays;
+		});
+
+		const top = entries.slice(0, MAX_LEADERBOARD_ENTRIES);
+		this.saveLeaderboard(top);
+		this.model.setLeaderboard(top);
+
+		this.view.updateLeaderboard(top);
+}	
 
 	/**
 	 * Load leaderboard from localStorage

@@ -49,6 +49,7 @@ export class FarmScreenView implements View {
 		handleKeydown: (event: KeyboardEvent) => void,
 		handleKeyup: (event: KeyboardEvent) => void,
 		handleStartDay: () => void,
+		handleEndGame: () => void,
 		registerEmu: (emu: FarmEmuController) => void,
 		removeEmus: () => void,
 		registerPlanter: (planter: FarmPlanterController) => void,
@@ -184,6 +185,18 @@ export class FarmScreenView implements View {
 			fill: "red",
 		});
 		this.startDayButton.on("mouseup", handleStartDay)
+		this.group.add(this.startDayButton);
+
+		// end game button display
+		this.startDayButton = new Konva.Text({
+			x: STAGE_WIDTH - 150,
+			y: 60,
+			text: "End game",
+			fontSize: 32,
+			fontFamily: "Arial",
+			fill: "red",
+		});
+		this.startDayButton.on("mouseup", handleEndGame)
 		this.group.add(this.startDayButton);
 
 		// Timer display
