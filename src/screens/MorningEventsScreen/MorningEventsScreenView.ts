@@ -81,12 +81,14 @@ export class MorningEventsScreenView implements View {
 
         // Background image with subtle float animation
         const bgImage = loadImage(backgroundSrc);
+        const dummy = new window.Image();
         this.background = new Konva.Image({
             x: -20,
             y: -20,
             width: STAGE_WIDTH + 40,
             height: STAGE_HEIGHT + 40,
             listening: false,
+            image: dummy,
         });
         if (bgImage.complete) {
             this.background.image(bgImage);
