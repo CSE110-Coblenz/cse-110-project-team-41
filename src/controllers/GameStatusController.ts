@@ -17,11 +17,11 @@ const STORAGE_KEY = "game:status";
  * Holds day progression, money, and simple inventory for morning events.
  */
 export class GameStatusController {
-    private emuCount: number;
-    private day: number;
-    private money: number;
-    private inventory: Inventory;
-	private emuEggs: number;
+    private emuCount!: number;
+    private day!: number;
+    private money!: number;
+    private inventory!: Inventory;
+	private emuEggs!: number;
 
     constructor() {
         const saved = this.load();

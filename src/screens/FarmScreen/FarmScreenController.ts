@@ -9,6 +9,7 @@ import { FarmScreenModel } from "./FarmScreenModel.ts";
 import { FarmScreenView } from "./FarmScreenView.ts";
 import type { MorningEventsScreenController } from "../MorningEventsScreen/MorningEventsScreenController.ts";
 import type { Image as KonvaImage } from "konva/lib/shapes/Image";
+import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
 
 /**
  * GameScreenController - Coordinates game logic between Model and View
@@ -287,7 +288,7 @@ export class FarmScreenController extends ScreenController {
 			return;
 		}
 
-		const survivingEmus: EmuController[] = [];
+		const survivingEmus: FarmEmuController[] = [];
 		const triggeredMines = new Set<ActiveMine>();
 
 		for (const emu of this.emus) {

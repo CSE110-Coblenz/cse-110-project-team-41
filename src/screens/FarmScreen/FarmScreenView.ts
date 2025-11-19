@@ -37,8 +37,8 @@ export class FarmScreenView implements View {
 	private menuButtonHandler: (() => void) | null = null;
 	private menuSaveHandler: (() => void) | null = null;
 	private menuBackHandler: (() => void) | null = null;
-	private registerEmu: (emu: FarmEmuController) => void = null;
-	private removeEmus: () => void = null;
+	private registerEmu: ((emu: FarmEmuController) => void) | null = null;
+	private removeEmus: (() => void )| null = null;
 	private timerText: Konva.Text;
 	private roundText: Konva.Text;
 	private mineInstructionText: Konva.Text;
