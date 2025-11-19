@@ -146,6 +146,7 @@ export class FarmScreenController extends ScreenController {
 		this.view.updateScore(this.model.getScore());
 		this.view.hideMenuOverlay();
 		this.resetMines();
+		this.view.spawnEmus(this.model.getSpawn());
 		this.view.updateTimer(this.timeRemaining);
 		this.updateCropDisplay();
 		this.view.show();
