@@ -35,7 +35,7 @@ export class GameOverScreenView implements View {
 
 		// Add description text
 		const desc = document.createElement("div");
-		desc.innerText = "Write down the name you want to show on the leaderboard:";
+		desc.innerText = "Write down the name you want to show on the leaderboard(max 15 letters):";
 		Object.assign(desc.style, {
 			fontSize: "18px",
 			marginBottom: "10px",
@@ -66,7 +66,7 @@ export class GameOverScreenView implements View {
 
 		this.nameInput.addEventListener("keydown", (e) => {
 			e.stopPropagation();
-			console.log("keydown on input:", e.key);
+			//console.log("keydown on input:", e.key);
 			if (e.key === "Enter") {
 				this.name = this.nameInput.value.trim();
 				console.log("Player name set to:", this.name);
@@ -85,7 +85,7 @@ export class GameOverScreenView implements View {
 			y: 30,
 			text: "GAME OVER!",
 			fontSize: 32,
-			fontFamily: "Arial",
+			fontFamily: "Impact, Arial Black, Arial",
 			fill: "red",
 			align: "center",
 		});
@@ -96,7 +96,7 @@ export class GameOverScreenView implements View {
 		this.finalScoreText = new Konva.Text({
 			x: STAGE_WIDTH / 2,
 			y: 100,
-			text: "Final Score: 0; Days Survived: 0",
+			text: "Final Score: 0\nDays Survived: 0",
 			fontSize: 32,
 			fontFamily: "Arial",
 			fill: "black",
@@ -107,13 +107,13 @@ export class GameOverScreenView implements View {
 		// Leaderboard display
 		this.leaderboardText = new Konva.Text({
 			x: STAGE_WIDTH / 2,
-			y: 150,
-			text: "Top Scores:\n(Play to see your scores!)",
+			y: 160, 
+			text: "TOP SCORES\n(Play to see your scores!)",
 			fontSize: 18,
-			fontFamily: "Arial",
-			fill: "#666",
+			fontFamily: "Courier New, monospace", 
+			fill: "#333", // Dark color
 			align: "center",
-			lineHeight: 1.5,
+			lineHeight: 1.3,
 		});
 		this.leaderboardText.offsetX(this.leaderboardText.width() / 2);
 		this.group.add(this.leaderboardText);
@@ -121,16 +121,20 @@ export class GameOverScreenView implements View {
 		// Play Again button (grouped) - moved down to make room for leaderboard
 		const playAgainButtonGroup = new Konva.Group();
 		const playAgainButton = new Konva.Rect({
-			x: STAGE_WIDTH / 2 - 100,
-			y: 480,
-			width: 200,
-			height: 60,
-			fill: "blue",
-			cornerRadius: 10,
-			stroke: "darkblue",
-			strokeWidth: 3,
-		});
-		const playAgainText = new Konva.Text({
+				x: STAGE_WIDTH / 2 - 120, 
+				y: 480,
+				width: 240, 
+				height: 60,
+				fill: "#28a745", 
+				cornerRadius: 15, 
+				stroke: "#1e7e34", 
+				strokeWidth: 4,
+				shadowColor: "black",
+				shadowBlur: 5,
+				shadowOffset: { x: 3, y: 3 },
+				shadowOpacity: 0.5,
+			});
+			const playAgainText = new Konva.Text({
 			x: STAGE_WIDTH / 2,
 			y: 495,
 			text: "PLAY AGAIN",
@@ -145,6 +149,15 @@ export class GameOverScreenView implements View {
 
 		// Button interaction - on the group
 		playAgainButtonGroup.on("click", onPlayAgainClick);
+		playAgainButtonGroup.on("mouseover", function () {
+			playAgainButton.fill("#31c750"); // Lighten on hover
+			document.body.style.cursor = "pointer";
+		});
+
+		playAgainButtonGroup.on("mouseout", function () {
+			playAgainButton.fill("#28a745"); // Revert on mouse out
+			document.body.style.cursor = "default";
+		});
 
 		this.group.add(playAgainButtonGroup);
 	}
@@ -163,14 +176,26 @@ export class GameOverScreenView implements View {
 	 * Update the leaderboard display
 	 */
 	updateLeaderboard(entries: LeaderboardEntry[]): void {
-    if (entries.length === 0) {
-        this.leaderboardText.text("Top Scores:\n(No scores yet!)");
-    } else {
-        let text = "LEADERBOARD:\n";
-        entries.forEach((entry, index) => {
-			text += `${index + 1}. ${entry.name}: ${entry.score} pts - ${entry.survivalDays} days - ${entry.timestamp}\n`;        });
-        this.leaderboardText.text(text);
-    }
+		if (entries.length === 0) {
+			this.leaderboardText.text("Top Scores:\n(No scores yet!)");
+		} else {
+			let text = "RANK  NAME                SCORE     DAYS SURVIVED        DATE\n";
+            text += "----------------------------------------------------------------\n"; // Increased separator length to match header
+
+            entries.forEach((entry, index) => {
+                const rankStr = String(index + 1).padEnd(4, ' ');
+                const nameStr = entry.name.substring(0, 15).padEnd(15, ' '); 
+                
+                const scoreStr = String(entry.score).padStart(8, ' ').padEnd(15, ' '); ;
+                
+                const daysStr = String(entry.survivalDays).padStart(5, ' ').padEnd(13, ' ');
+                
+                const dateStr = entry.timestamp.split(',')[0].trim();
+
+                text += `${rankStr} ${nameStr} ${scoreStr} ${daysStr} ${dateStr}\n`;
+            });
+            this.leaderboardText.text(text);
+		}
 
     // Re-center after text change
     this.leaderboardText.offsetX(this.leaderboardText.width() / 2);
