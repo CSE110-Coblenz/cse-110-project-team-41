@@ -532,14 +532,12 @@ export class FarmScreenController extends ScreenController {
 	//For integration of minigames into the main game:
 
 	private handleMiniGames(day: number): void {
-		if(day % 2 == 0){
+		if(day % 4 == 1 || day % 3 == 2){
 			//Make a menu screen appear
 			//Switch screen to hunting game
 			//Run the game
 			this.view.showHuntMenuOverlay();
-		}
-
-		if(day % 4 == 1 || day % 4 == 3){
+		}else if(day % 3 == 1){
 			//Make a manu screen appear
 			//Switch screen to egg game
 			//Run the game

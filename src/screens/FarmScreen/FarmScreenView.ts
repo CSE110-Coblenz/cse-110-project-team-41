@@ -604,6 +604,7 @@ export class FarmScreenView implements View {
 	}
 
 	showMenuOverlay(): void {
+		this.menuOverlay.moveToTop();
 		this.menuOverlay.visible(true);
 		this.group.getLayer()?.draw();
 	}
@@ -616,6 +617,7 @@ export class FarmScreenView implements View {
 	//Hide and Show hunt menu:
 
 	showHuntMenuOverlay(): void {
+		this.huntMenuOverlay.moveToTop();
 		this.huntMenuOverlay.visible(true);
 		this.group.getLayer()?.draw();
 	}
@@ -628,6 +630,7 @@ export class FarmScreenView implements View {
 	//Hide and Show egg menu:
 
 	showEggMenuOverlay(): void {
+		this.eggMenuOverlay.moveToTop();
 		this.eggMenuOverlay.visible(true);
 		this.group.getLayer()?.draw();
 	}
