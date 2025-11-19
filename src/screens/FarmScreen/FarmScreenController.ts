@@ -95,6 +95,7 @@ export class FarmScreenController extends ScreenController {
 		this.view.updateScore(this.model.getScore());
 		this.view.hideMenuOverlay();
 		this.resetMines();
+		this.view.spawnEmus(this.model.getSpawn());
 		this.view.updateTimer(this.timeRemaining);
 		this.updateCropDisplay();
 		this.view.show();
@@ -286,7 +287,7 @@ export class FarmScreenController extends ScreenController {
 			return;
 		}
 
-		const survivingEmus: EmuController[] = [];
+		const survivingEmus: FarmEmuController[] = [];
 		const triggeredMines = new Set<ActiveMine>();
 
 		for (const emu of this.emus) {
