@@ -1,15 +1,14 @@
 import { ScreenController, type ScreenSwitcher } from "../../types.ts";
-import { MorningEventsScreenModel } from "./MorningEventsScreenModel.ts";
 import { MorningEventsScreenView } from "./MorningEventsScreenView.ts";
 import { GameStatusController } from "../../controllers/GameStatusController.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
 import { QuizController, type QuizFact } from "../../controllers/QuizController.ts";
+import { GameItem, ItemCosts } from "../../constants.ts";
 
 /**
  * MorningEventsScreenController - Handles morning screen interactions
  */
 export class MorningEventsScreenController extends ScreenController {
-    private model: MorningEventsScreenModel;
     private view: MorningEventsScreenView;
     private screenSwitcher: ScreenSwitcher;
     private status: GameStatusController;
@@ -25,11 +24,10 @@ export class MorningEventsScreenController extends ScreenController {
         this.status = status;
         this.audio = audio;
 
-        this.model = new MorningEventsScreenModel();
         this.quiz = new QuizController();
         this.view = new MorningEventsScreenView(
-            () => this.handleBuy(),
-            () => this.handleSell(),
+            (item: GameItem) => this.handleBuy(item),
+            (item: GameItem) => this.handleSell(item),
             () => this.handleContinue(),
             () => this.handleOpenQuiz(),
             (idx) => this.handleQuizChoice(idx),
@@ -65,8 +63,7 @@ export class MorningEventsScreenController extends ScreenController {
     private refreshUI(): void {
         const dayToShow = this.dayOverride ?? this.status.getDay();
         this.view.updateDay(dayToShow);
-        this.view.updateMoney(this.status.getMoney());
-        this.view.updateInventory(this.status.getItemCount("crop"));
+        this.view.updateInventory(this.status.getInventory());
         this.updateMorningContent();
     }
 
@@ -81,31 +78,31 @@ export class MorningEventsScreenController extends ScreenController {
         if (quizUnlocked && due) {
             this.currentDueQuiz = { fact: due.fact, dueDay: due.due.dueDay };
             this.view.setDailyQuizButtonVisible(true);
-            this.view.setInfoText(`Fact: ${fact.fact}\n(Daily quiz available! Click the button when you're ready.)`);
+            this.view.setInfoText(fact.fact);
         } else {
             if (!quizUnlocked) {
-                this.view.setInfoText(`Fact: ${fact.fact}\n(Daily quiz unlocks on Day 4. Keep reading!)`);
+                this.view.setInfoText(fact.fact);
             } else {
-                this.view.setInfoText(`Fact: ${fact.fact}\n(You will be quizzed in 3 days!)`);
+                this.view.setInfoText(fact.fact);
             }
             this.currentDueQuiz = null;
             this.view.setDailyQuizButtonVisible(false);
         }
     }
 
-    private handleBuy(): void {
-        const cost = this.model.getCropBuyCost();
+    private handleBuy(item: GameItem): void {
+        const cost = ItemCosts[item];
         if (this.status.spend(cost)) {
-            this.status.addToInventory("crop", 1);
+            this.status.addToInventory(item, 1);
             this.audio.playSfx("buy");
             this.refreshUI();
         }
     }
 
-    private handleSell(): void {
-        const price = this.model.getCropSellPrice();
-        if (this.status.removeFromInventory("crop", 1)) {
-            this.status.addMoney(price);
+    private handleSell(item: GameItem): void {
+        const price = ItemCosts[item];
+        if (this.status.removeFromInventory(item, 1)) {
+            this.status.addToInventory(GameItem.Money, price);
             this.audio.playSfx("sell");
             this.refreshUI();
         }
@@ -137,7 +134,7 @@ export class MorningEventsScreenController extends ScreenController {
         const correct = index === fact.correctIndex;
         if (correct) {
             // Reward: 1 Mine
-            this.status.addToInventory("mine", 1);
+            this.status.addToInventory(GameItem.Mine, 1);
             this.view.setInfoText("Correct! You received 1 Mine. Press M in the farm to deploy it.");
         } else {
             this.view.setInfoText("Incorrect this time! Keep an eye on the facts and try again next time.");
@@ -146,7 +143,6 @@ export class MorningEventsScreenController extends ScreenController {
         this.currentDueQuiz = null;
         this.view.hideQuizPopup();
         this.view.setDailyQuizButtonVisible(false);
-        this.view.updateMoney(this.status.getMoney());
-        this.view.updateInventory(this.status.getItemCount("crop"));
+        this.view.updateInventory(this.status.getInventory());
     }
 }

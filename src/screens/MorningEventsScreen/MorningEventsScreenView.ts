@@ -1,8 +1,9 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
-import { STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
+import { GameItem, STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
 import backgroundSrc from "../../../assets/background.png";
 import stallSrc from "../../../assets/stall.png"
+import type { Inventory } from "../../controllers/GameStatusController.ts";
 
 type ButtonSpec = {
     x: number;
@@ -24,6 +25,8 @@ const loadImage = (src: string): HTMLImageElement => {
     fallback.src = src;
     return fallback;
 };
+
+const stallImage = loadImage(stallSrc);
 
 function makeButton(spec: ButtonSpec, onClick: () => void): Konva.Group {
     const group = new Konva.Group({ cursor: "pointer" });
@@ -63,16 +66,19 @@ export class MorningEventsScreenView implements View {
     private backgroundAnimation: Konva.Animation | null = null;
     private backgroundPhase = 0;
     private titleText: Konva.Text;
-    private moneyText: Konva.Text;
-    private inventoryText: Konva.Text;
     private infoText: Konva.Text;
     private dailyQuizButton: Konva.Group;
     private quizGroup: Konva.Group | null = null;
     private quizChoiceHandler: ((index: number) => void) | null = null;
 
+    private inventoryMoneyText: Konva.Text;
+    private inventoryCropsText: Konva.Text;
+    private inventoryEggsText: Konva.Text;
+    private inventoryMinesText: Konva.Text;
+
     constructor(
-        onBuy: () => void,
-        onSell: () => void,
+        onBuy: (item: GameItem) => void,
+        onSell: (item: GameItem) => void,
         onContinue: () => void,
         onOpenQuiz?: () => void,
         onSelectQuizChoice?: (index: number) => void,
@@ -101,92 +107,125 @@ export class MorningEventsScreenView implements View {
         }
         this.group.add(this.background);
 
+        const filter = new Konva.Rect({
+            x: STAGE_WIDTH - 360,
+            y: 0,
+            width: 360,
+            height: STAGE_HEIGHT,
+            fill: "black",
+            opacity: 0.3,
+        })
+        this.group.add(filter)
+
         // Title
         this.titleText = new Konva.Text({
-            x: STAGE_WIDTH / 2,
+            x: STAGE_WIDTH - 340,
             y: 60,
             text: "Morning Events",
-            fontSize: 40,
+            fontSize: 36,
             fontFamily: "Arial",
             fill: "#222",
             align: "center",
         });
-        this.titleText.offsetX(this.titleText.width() / 2);
         this.group.add(this.titleText);
 
-        // Money / Inventory
-        this.moneyText = new Konva.Text({
-            x: STAGE_WIDTH / 2,
-            y: 140,
-            text: "Money: $0",
-            fontSize: 28,
-            fontFamily: "Arial",
-            fill: "#333",
-            align: "center",
-        });
-        this.moneyText.offsetX(this.moneyText.width() / 2);
-        this.group.add(this.moneyText);
-
-        this.inventoryText = new Konva.Text({
-            x: STAGE_WIDTH / 2,
+        this.inventoryMoneyText = new Konva.Text({
+            x: STAGE_WIDTH - 340,
             y: 180,
-            text: "Crops: 0",
+            text: "Money: $0",
             fontSize: 24,
             fontFamily: "Arial",
             fill: "#333",
             align: "center",
         });
-        this.inventoryText.offsetX(this.inventoryText.width() / 2);
-        this.group.add(this.inventoryText);
+        this.group.add(this.inventoryMoneyText);
+        this.inventoryCropsText = new Konva.Text({
+            x: STAGE_WIDTH - 340,
+            y: 210,
+            text: "Crops: $0",
+            fontSize: 24,
+            fontFamily: "Arial",
+            fill: "#333",
+            align: "center",
+        });
+        this.group.add(this.inventoryCropsText);
+        this.inventoryEggsText = new Konva.Text({
+            x: STAGE_WIDTH - 340,
+            y: 240,
+            text: "Eggs: 0",
+            fontSize: 24,
+            fontFamily: "Arial",
+            fill: "#333",
+            align: "center",
+        });
+        this.group.add(this.inventoryEggsText);
+        this.inventoryMinesText = new Konva.Text({
+            x: STAGE_WIDTH - 340,
+            y: 270,
+            text: "Mines: 0",
+            fontSize: 24,
+            fontFamily: "Arial",
+            fill: "#333",
+            align: "center",
+        });
+        this.group.add(this.inventoryMinesText);
+
+
+        // Market
+        const marketGroup = new Konva.Group();
+        const stallBackdrop = new Konva.Image({
+            x: 20,
+            y: STAGE_HEIGHT - 400,
+            width: 400,
+            height: 400,
+            image: stallImage
+        });
+        const sellCropBtn = makeButton({ x: 100, y: STAGE_HEIGHT - 270, width: 240, height: 40, text: "Sell Crop", fill: "#c62828" }, () => onSell(GameItem.Crop));
+        const buyCropBtn = makeButton({ x: 100, y: STAGE_HEIGHT - 220, width: 240, height: 40, text: "Sell Egg", fill: "#c62828" }, () => onSell(GameItem.Egg));
+        const buyMineBtn = makeButton({ x: 100, y: STAGE_HEIGHT - 170, width: 240, height: 40, text: "Buy Mine", fill: "#2e7d32" }, () => onBuy(GameItem.Mine));
+        marketGroup.add(stallBackdrop);
+        marketGroup.add(buyCropBtn);
+        marketGroup.add(buyMineBtn);
+        this.group.add(marketGroup);
 
         // Buttons
-        const buyBtn = makeButton({ x: STAGE_WIDTH / 2 - 200, y: 260, width: 150, height: 60, text: "Buy Crop", fill: "#2e7d32" }, onBuy);
-        const sellBtn = makeButton({ x: STAGE_WIDTH / 2 + 50, y: 260, width: 150, height: 60, text: "Sell Crop", fill: "#c62828" }, onSell);
-        const quizBtn = makeButton({ x: STAGE_WIDTH / 2 - 75, y: 360, width: 150, height: 60, text: "Daily Quiz", fill: "#8e24aa" }, () => onOpenQuiz?.());
+        const quizBtn = makeButton({ x: STAGE_WIDTH -340, y: STAGE_HEIGHT - 80, width: 150, height: 60, text: "Daily Quiz", fill: "#8e24aa" }, () => onOpenQuiz?.());
         quizBtn.visible(false);
         this.dailyQuizButton = quizBtn;
-        const contBtn = makeButton({ x: STAGE_WIDTH / 2 - 75, y: 430, width: 150, height: 60, text: "Continue", fill: "#1565c0" }, onContinue);
-        this.group.add(buyBtn);
-        this.group.add(sellBtn);
+        const contBtn = makeButton({ x: STAGE_WIDTH - 170, y: STAGE_HEIGHT - 80, width: 150, height: 60, text: "Continue", fill: "#1565c0" }, onContinue);
+        this.group.add(buyCropBtn);
+        this.group.add(sellCropBtn);
         this.group.add(quizBtn);
         this.group.add(contBtn);
 
         // Informational text area (facts, quiz result, etc.)
         this.infoText = new Konva.Text({
-            x: STAGE_WIDTH / 2,
-            y: 210,
+            x: STAGE_WIDTH - 340,
+            y: 110,
             text: "",
-            fontSize: 20,
+            fontSize: 18,
             fontFamily: "Arial",
             fill: "#111",
-            align: "center",
-            width: STAGE_WIDTH - 80,
+            width: 300,
         });
-        this.infoText.offsetX(this.infoText.width() / 2);
         this.group.add(this.infoText);
     }
 
     updateDay(day: number): void {
         this.titleText.text(`Morning - Day ${day}`);
-        this.titleText.offsetX(this.titleText.width() / 2);
         this.group.getLayer()?.draw();
     }
 
-    updateMoney(amount: number): void {
-        this.moneyText.text(`Money: $${amount}`);
-        this.moneyText.offsetX(this.moneyText.width() / 2);
-        this.group.getLayer()?.draw();
-    }
-
-    updateInventory(cropCount: number): void {
-        this.inventoryText.text(`Crops: ${cropCount}`);
-        this.inventoryText.offsetX(this.inventoryText.width() / 2);
+    updateInventory(inventory: Inventory): void {
+        this.inventoryMoneyText.text(`Money: $${inventory.money}`);
+        this.inventoryCropsText.text(`Crops: ${inventory.crop}`);
+        this.inventoryEggsText.text(`Eggs: ${inventory.egg}`);
+        this.inventoryMinesText.text(`Mines: ${inventory.mine}`);
         this.group.getLayer()?.draw();
     }
 
     setInfoText(text: string): void {
         this.infoText.text(text);
-        this.infoText.offsetX(this.infoText.width() / 2);
         this.group.getLayer()?.draw();
     }
 

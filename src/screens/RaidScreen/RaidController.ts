@@ -9,6 +9,7 @@ import {
 	MAZE_HEIGHT,
 } from "./RaidModel";
 import { RaidView } from "./RaidView";
+import { GameItem } from "../../constants";
 
 export class RaidController extends ScreenController {
 	private model: RaidModel;
@@ -174,7 +175,7 @@ export class RaidController extends ScreenController {
 
 		if (didWin) {
 			// ONLY add eggs if they won!
-			this.gameStatus.addEmuEggs(this.model.eggsCollected);
+			this.gameStatus.addToInventory(GameItem.Egg, this.model.eggsCollected);
 			this.view.showEndPopup(
 				`MISSION COMPLETE!\n\nYou reached the exit with\n${this.model.eggsCollected} eggs!`,
 			);
