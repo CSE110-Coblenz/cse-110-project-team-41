@@ -13,6 +13,8 @@ export class GameOverScreenView implements View {
 	private nameInput: HTMLInputElement;
 	private name: string = "Anonymous";
 	private nameInputContainer: HTMLDivElement;
+	private playAgainButtonGroup: Konva.Group;
+	private noHighScoreMsg: Konva.Text;
 
 	// Fixed X positions for each column center/edge
     private static readonly COLUMN_X = {
@@ -51,8 +53,7 @@ export class GameOverScreenView implements View {
 
 		// Add description text
 		const desc = document.createElement("div");
-		desc.innerText = "Write down the name you want to show on the leaderboard(max 15 letters):";
-		Object.assign(desc.style, {
+		desc.innerText = "You made the Leaderboard! Enter your name:\n(up to 15 letters, press ENTER to submit)";		Object.assign(desc.style, {
 			fontSize: "18px",
 			marginBottom: "10px",
 			color: "#333",
@@ -65,7 +66,7 @@ export class GameOverScreenView implements View {
 		this.nameInput.type = "text";
 		Object.assign(this.nameInput.style, {
 			width: "260px",
-			fontSize: "20px",
+			fontSize: "24px",
 			padding: "8px 12px",
 			borderRadius: "8px",
 			border: "2px solid #888",
@@ -88,6 +89,7 @@ export class GameOverScreenView implements View {
 				console.log("Player name set to:", this.name);
 				this.hideInput();
 				this.nameInput.blur();
+				this.playAgainButtonGroup.listening(true);
 				onNameEntered(this.name); 
 			} else if (e.key === "Escape") {
 				this.hideInput();
@@ -124,7 +126,7 @@ export class GameOverScreenView implements View {
         this.renderLeaderboardHeader();
 
 		// Play Again button (grouped) - moved down to make room for leaderboard
-		const playAgainButtonGroup = new Konva.Group();
+		this.playAgainButtonGroup = new Konva.Group();
 		const playAgainButton = new Konva.Rect({
 				x: STAGE_WIDTH / 2 - 120, 
 				y: 480,
@@ -149,22 +151,37 @@ export class GameOverScreenView implements View {
 			align: "center",
 		});
 		playAgainText.offsetX(playAgainText.width() / 2);
-		playAgainButtonGroup.add(playAgainButton);
-		playAgainButtonGroup.add(playAgainText);
+		this.playAgainButtonGroup.add(playAgainButton);
+		this.playAgainButtonGroup.add(playAgainText);
 
 		// Button interaction - on the group
-		playAgainButtonGroup.on("click", onPlayAgainClick);
-		playAgainButtonGroup.on("mouseover", function () {
+		this.playAgainButtonGroup.on("click", onPlayAgainClick);
+		this.playAgainButtonGroup.on("mouseover", function () {
 			playAgainButton.fill("#31c750"); // Lighten on hover
 			document.body.style.cursor = "pointer";
 		});
 
-		playAgainButtonGroup.on("mouseout", function () {
+		this.playAgainButtonGroup.on("mouseout", function () {
 			playAgainButton.fill("#28a745"); // Revert on mouse out
 			document.body.style.cursor = "default";
 		});
+		this.playAgainButtonGroup.listening(false); 
 
-		this.group.add(playAgainButtonGroup);
+		this.group.add(this.playAgainButtonGroup);
+
+		this.noHighScoreMsg = new Konva.Text({
+			x: STAGE_WIDTH / 2,
+			y: 450, // Positioned just above the Play Again button
+			text: "You didn't make the top 10. Better luck next time!",
+			fontSize: 20,
+			fontFamily: "Arial",
+			fill: "#666",
+			fontStyle: "bold",
+			align: "center",
+			visible: false // Hidden by default
+		});
+		this.noHighScoreMsg.offsetX(this.noHighScoreMsg.width() / 2);
+		this.group.add(this.noHighScoreMsg);
 	}
 
 	/**
@@ -362,10 +379,16 @@ export class GameOverScreenView implements View {
 	/**
 	 * Show the screen
 	 */
-	show(): void {
+	show(isHighScore: boolean = false): void {
 		this.group.visible(true);
 		this.group.getLayer()?.draw();
-		this.showNameInput();
+		if (isHighScore){
+			this.showNameInput();
+			this.noHighScoreMsg.visible(false);
+		}else{
+			this.playAgainButtonGroup.listening(true);
+			this.noHighScoreMsg.visible(true);
+		}
 	}
 	hideInput(): void {
 		this.nameInputContainer.style.display = "none";	
