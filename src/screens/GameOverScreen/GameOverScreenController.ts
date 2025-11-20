@@ -48,10 +48,40 @@ export class GameOverScreenController extends ScreenController {
 		this.model.setLeaderboard(entries);
 		this.view.updateLeaderboard(entries);
 
-		this.view.show();
+		// Check if this is a high score
+		const isHighScore = this.checkIfQualifies(entries, finalScore, survivalDays);
+
+		// Pass the boolean to the view
+		this.view.show(isHighScore);
 
 		// Play a game over sound effect (BGM handled by App)
 		this.audio.playSfx("gameover");
+	}
+
+	/**
+	 * Check if the current score qualifies for the top 10
+	 */
+	private checkIfQualifies(entries: LeaderboardEntry[], score: number, days: number): boolean {
+		// If leaderboard isn't full, any score qualifies
+		if (entries.length < MAX_LEADERBOARD_ENTRIES) {
+			return true;
+		}
+
+		// Get the last entry (lowest rank)
+		// Assumes entries are already sorted (which they are when saved)
+		const lastEntry = entries[entries.length - 1];
+
+		// Check if current score is better than the last entry
+		if (score > lastEntry.score) {
+			return true;
+		}
+
+		// If scores are equal, check survival days
+		if (score === lastEntry.score && days > lastEntry.survivalDays) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private handleNameEntered(name: string): void {
