@@ -1,15 +1,14 @@
+import type { Image as KonvaImage } from "konva/lib/shapes/Image";
+import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
 import { FarmEmuController } from "../../components/FarmEmuComponent/FarmEmuController.ts";
 import type { FarmPlanterController } from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
-import { GAME_DURATION, ONE_OVER_ROOT_TWO, PLAYER_SPEED } from "../../constants.ts";
 import { GameStatusController } from "../../controllers/GameStatusController.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { ScreenController } from "../../types.ts";
+import type { MorningEventsScreenController } from "../MorningEventsScreen/MorningEventsScreenController.ts";
 import { FarmScreenModel } from "./FarmScreenModel.ts";
 import { FarmScreenView } from "./FarmScreenView.ts";
-import type { MorningEventsScreenController } from "../MorningEventsScreen/MorningEventsScreenController.ts";
-import type { Image as KonvaImage } from "konva/lib/shapes/Image";
-import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
 
 /**
  * GameScreenController - Coordinates game logic between Model and View
@@ -17,9 +16,6 @@ import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
 export class FarmScreenController extends ScreenController {
 	private model: FarmScreenModel;
 	private view: FarmScreenView;
-	private gameTimer: number | null = null;
-	private lastTickTime: number = 0;
-	private timeRemaining: number = GAME_DURATION;
 
 	private status: GameStatusController;
 	private audio: AudioManager;
@@ -28,8 +24,6 @@ export class FarmScreenController extends ScreenController {
 	private morning: MorningEventsScreenController | null = null;
 	private screenSwitcher: ScreenSwitcher;
 
-	private playerDirectionX: number = 0;
-	private playerDirectionY: number = 0;
 	private activeMines: ActiveMine[] = [];
 
 	// private squeezeSound: HTMLAudioElement;
@@ -43,7 +37,6 @@ export class FarmScreenController extends ScreenController {
 		this.model = new FarmScreenModel();
 		this.view = new FarmScreenView(
 			(event: KeyboardEvent) => this.handleKeydown(event),
-			(event: KeyboardEvent) => this.handleKeyup(event),
 			() => this.handleEndDay(),
 			() => this.endGame(),
 			(emu: FarmEmuController) => this.registerEmu(emu),
@@ -63,22 +56,7 @@ export class FarmScreenController extends ScreenController {
 		this.morning = controller;
 	}
 
-	private gameLoop = (timestamp: number): void => {
-		const deltaTime: number = (timestamp - this.lastTickTime) * 0.001;
-		this.lastTickTime = timestamp;
-
-		if (Math.abs(this.playerDirectionX) + Math.abs(this.playerDirectionY) == 2) {
-			this.view.movePlayerDelta(
-				this.playerDirectionX * PLAYER_SPEED * deltaTime * ONE_OVER_ROOT_TWO,
-				this.playerDirectionY * PLAYER_SPEED * deltaTime * ONE_OVER_ROOT_TWO
-			);
-		} else {
-			this.view.movePlayerDelta(
-				this.playerDirectionX * PLAYER_SPEED * deltaTime,
-				this.playerDirectionY * PLAYER_SPEED * deltaTime
-			);
-		}
-
+	private gameLoop = (): void => {
 		this.checkMineCollisions();
 
 		// Request the next frame
@@ -91,17 +69,13 @@ export class FarmScreenController extends ScreenController {
 	startGame(): void {
 		// Reset model state
 		this.model.reset();
-		this.timeRemaining = GAME_DURATION;
 
 		// Update view
 		this.view.updateScore(this.model.getScore());
 		this.view.hideMenuOverlay();
 		this.resetMines();
-		this.view.updateTimer(this.timeRemaining);
 		this.updateCropDisplay();
 		this.view.show();
-
-		this.startTimer();
 	}
 
 	/**
@@ -111,43 +85,20 @@ export class FarmScreenController extends ScreenController {
 		// Update view
 		this.view.updateScore(this.model.getScore());
 		this.updateCropDisplay();
-		this.timeRemaining = GAME_DURATION;
 		this.view.hideMenuOverlay();
-		this.view.updateTimer(this.timeRemaining);
-		this.view.updateRound(this.status.getDay());
 		this.view.show();
-
-		this.startTimer();
 	}
 
 	/**
-	 * Handle player movement
+	 * Handle mine placement
 	 */
     private handleKeydown(event: KeyboardEvent): void {
         const key = event.key;
         switch (key) {
-            case "w": this.playerDirectionY = -1; break;
-            case "s": this.playerDirectionY = 1; break;
-            case "d": this.playerDirectionX = 1; break;
-            case "a": this.playerDirectionX = -1; break;
             case "m": this.handleDeployMine(); break;
         }
         event.preventDefault();
     }
-
-	/**
-	 * Handle player movement
-	 */
-	private handleKeyup(event: KeyboardEvent): void {
-		const key = event.key;
-		if (["w", "s"].includes(key)) {
-			this.playerDirectionY = 0;
-		}
-		if (["a", "d"].includes(key)) {
-			this.playerDirectionX = 0;
-		}
-		event.preventDefault();
-	}
 
 	/**
 	 * Start day
@@ -157,40 +108,9 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	/**
-	 * Start the countdown timer
-	 */
-	private startTimer(): void {
-		this.stopTimer();
-		const timerId = setInterval(() => {
-			if (this.timeRemaining <= 0) {
-				this.endRound();
-				return;
-			}
-			this.timeRemaining = Math.max(0, this.timeRemaining - 1);
-			this.view.updateTimer(this.timeRemaining);
-			if (this.timeRemaining <= 0) {
-				this.endRound();
-			}
-		}, 1000) as unknown as number;
-		this.gameTimer = timerId;
-	}
-
-	/**
-	 * Stop the timer
-	 */
-	private stopTimer(): void {
-		if (!this.gameTimer) {
-			return;
-		}
-		clearInterval(this.gameTimer);
-		this.gameTimer = null;
-	}
-
-	/**
 	 * End the game
 	 */
     private endRound(): void {
-        this.stopTimer();
         this.view.clearEmus();
         this.status.endDay();
         const newDay = this.status.getDay();
@@ -242,25 +162,17 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private handleMenuButton(): void {
-		this.stopTimer();
 		this.view.showMenuOverlay();
 	}
 
 	private handleMenuSaveAndExit(): void {
 		this.view.hideMenuOverlay();
-		this.stopTimer();
 		this.status.saveState();
 		this.screenSwitcher.switchToScreen({ type: "main_menu" });
 	}
 
 	private handleMenuResume(): void {
 		this.view.hideMenuOverlay();
-		if (this.timeRemaining <= 0) {
-			this.endRound();
-			return;
-		}
-		this.view.updateTimer(this.timeRemaining);
-		this.startTimer();
 	}
 
 	private handleOpenMarket(onClose?: () => void): void {
@@ -389,7 +301,6 @@ export class FarmScreenController extends ScreenController {
 	 * End the game
 	 */
 	endGame(): void {
-		this.stopTimer();
         this.view.clearEmus();
 		this.screenSwitcher.switchToScreen({ 
 			type: "game_over", 
