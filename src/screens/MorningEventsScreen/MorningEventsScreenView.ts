@@ -2,6 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
 import backgroundSrc from "../../../assets/background.png";
+import stallSrc from "../../../assets/stall.png"
 
 type ButtonSpec = {
     x: number;
