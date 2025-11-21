@@ -261,7 +261,7 @@ export class FarmScreenController extends ScreenController {
 	//Handling options in the hunt menu:
 	private handleHuntCont(): void {
 		this.status.saveState();
-		this.screenSwitcher.switchToScreen({ type: "minigame2" });
+		this.screenSwitcher.switchToScreen({ type: "minigame2_intro" });
 		this.view.hideHuntMenuOverlay();
 	}
 
