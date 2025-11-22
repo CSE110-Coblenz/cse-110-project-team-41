@@ -9,6 +9,9 @@ import { ScreenController } from "../../types.ts";
 import type { MorningEventsScreenController } from "../MorningEventsScreen/MorningEventsScreenController.ts";
 import { FarmScreenModel } from "./FarmScreenModel.ts";
 import { FarmScreenView } from "./FarmScreenView.ts";
+import type { MorningEventsScreenController } from "../MorningEventsScreen/MorningEventsScreenController.ts";
+import type { Image as KonvaImage } from "konva/lib/shapes/Image";
+import Konva from "konva";
 
 /**
  * GameScreenController - Coordinates game logic between Model and View
@@ -25,14 +28,14 @@ export class FarmScreenController extends ScreenController {
 	private screenSwitcher: ScreenSwitcher;
 
 	private activeMines: ActiveMine[] = [];
+	private stage: Konva.Stage;
 
-	// private squeezeSound: HTMLAudioElement;
-
-	constructor(_screenSwitcher: ScreenSwitcher, status: GameStatusController, audio: AudioManager) {
+	constructor(_screenSwitcher: ScreenSwitcher, status: GameStatusController, audio: AudioManager, stage: Konva.Stage) {
 		super();
 		this.status = status;
 		this.audio = audio;
 		this.screenSwitcher = _screenSwitcher;
+		this.stage = stage;
 
 		this.model = new FarmScreenModel();
 		this.view = new FarmScreenView(
@@ -50,6 +53,11 @@ export class FarmScreenController extends ScreenController {
 		);
 
 		requestAnimationFrame(this.gameLoop);
+	}
+
+	render(): void {
+		console.log("Farm screen initialized");
+		// Add farm screen rendering logic here
 	}
 
 	setMorningController(controller: MorningEventsScreenController): void {
