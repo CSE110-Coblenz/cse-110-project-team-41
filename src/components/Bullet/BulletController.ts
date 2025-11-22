@@ -1,6 +1,6 @@
 import { BulletModel } from "./BulletModel";
 import { BulletView } from "./BulletView";
-import type { ObstacleModel } from "../Obstacle/ObstacleModel";
+import type { ObstacleController } from "../Obstacle/ObstacleController";
 
 export class BulletController {
   model: BulletModel;
@@ -12,7 +12,7 @@ export class BulletController {
     this.view = new BulletView(this.model);
   }
 
-  update(obstacles: ObstacleModel[], stageWidth: number, stageHeight: number) {
+  update(obstacleControllers: ObstacleController[], stageWidth: number, stageHeight: number) {
     // Skip update if bullet is inactive
     if (!this.model.active) return;
 
@@ -27,6 +27,7 @@ export class BulletController {
     }
     // Check for collision with obstacles
     const box = this.model.boundingBox();
+    const obstacles = obstacleControllers.map(c => c.getModel());
     const hit = obstacles.some((o) => o.collides(box));
     if (hit) {
       // Deactivate bullet when it hits an obstacle
