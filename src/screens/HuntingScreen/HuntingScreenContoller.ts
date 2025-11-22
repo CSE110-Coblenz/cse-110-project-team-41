@@ -55,39 +55,44 @@ export class HuntingScreenController extends ScreenController {
     this.gameLoop();
   }
 
+  private cleanup(){
+    this.playerController?.getGroup().destroy();
+    
+    this.obstacleViews.forEach((ov) => ov.getNode().destroy());
+    this.obstacleViews = []; 
+    this.obstacleModels = [];
+
+    this.emuControllers.forEach((ec) => ec.getGroup().destroy());
+    this.emuControllers = [];
+
+    this.bulletControllers.forEach((bc) => bc.getGroup().destroy());
+    this.bulletControllers = [];
+  }
+
   private resetGame() {
     // reset model
+    this.cleanup();
     this.model.reset();
-
-    // clear groups (if any) and re-create everything
-    // create obstacles (offset by HUD height)
-    this.obstacleModels = [];
-    this.obstacleViews = [];
     
     // Create rocks (gray rectangles)
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       const x = Math.random() * (STAGE_WIDTH - 100);
       const y = GAME_AREA_Y + Math.random() * (GAME_AREA_HEIGHT - 100);
-      const w = 40 + Math.random() * 40;
-      const h = 40 + Math.random() * 40;
-      const om = new ObstacleModel(x, y, w, h, "rock");
+      let om;
+      if ( i < 6 ) {
+        const w = 40 + Math.random() * 40;
+        const h = 40 + Math.random() * 40;
+        om = new ObstacleModel(x, y, w, h, "rock");
+      }else{
+        const size = 30 + Math.random() * 30; // Diameter between 30-60
+        om = new ObstacleModel(x, y, size, size, "bush");
+      }
       this.obstacleModels.push(om);
       const ov = new ObstacleView(om);
       this.obstacleViews.push(ov);
       this.view.getGroup().add(ov.getNode());
     }
-    
-    // Create bushes (green circles)
-    for (let i = 0; i < 6; i++) {
-      const size = 30 + Math.random() * 30; // Diameter between 30-60
-      const x = Math.random() * (STAGE_WIDTH - 100);
-      const y = GAME_AREA_Y + Math.random() * (GAME_AREA_HEIGHT - 100);
-      const om = new ObstacleModel(x, y, size, size, "bush");
-      this.obstacleModels.push(om);
-      const ov = new ObstacleView(om);
-      this.obstacleViews.push(ov);
-      this.view.getGroup().add(ov.getNode());
-    }
+  
 
     // spawn player safely (offset by HUD height)
     const playerPos = getSafeSpawnPosition(this.obstacleModels, 30, 30, GAME_AREA_Y, GAME_AREA_HEIGHT);
@@ -103,9 +108,6 @@ export class HuntingScreenController extends ScreenController {
       this.emuControllers.push(ec);
       this.view.getGroup().add(ec.getGroup());
     }
-
-    // clear bullets
-    this.bulletControllers = [];
   }
 
   private onKeyDown(e: KeyboardEvent) {
