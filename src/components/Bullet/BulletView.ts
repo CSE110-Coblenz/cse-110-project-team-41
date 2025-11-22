@@ -1,37 +1,35 @@
 import Konva from "konva";
 import { BulletModel } from "./BulletModel";
+import bulletSrc from "../../../assets/bullet.png";
+
+// Pre-load the image once to avoid reloading it for every single bullet shot
+const bulletImageObj = new Image();
+bulletImageObj.src = bulletSrc;
 
 export class BulletView {
   private group: Konva.Group;
-  private head: Konva.RegularPolygon;
-  private body: Konva.Rect;
+  private sprite: Konva.Image;
   private model: BulletModel;
 
   constructor(model: BulletModel) {
     this.model = model;
+
+    this.sprite = new Konva.Image({
+      image: bulletImageObj,
+      width: 40,  
+      height: 20,
+      // Center the origin so rotation works perfectly around the middle
+      offsetX: 20, 
+      offsetY: 10, 
+    });
+
+    // Apply rotation based on direction
     const angle = this.dirAngle(); // Convert direction to angle
-
-    // Create bullet head (triangle)
-    this.head = new Konva.RegularPolygon({
-      sides: 3,
-      radius: 5,
-      fill: "orange",
-      rotation: angle - 90,
-    });
-
-    // Create bullet body (rectangle)
-    this.body = new Konva.Rect({
-      width: 8,
-      height: 12,
-      fill: "yellow",
-      offsetY: 6,
-      rotation: angle,
-    });
-
+    this.sprite.rotation(angle);
     // Group head and body for unified positioning
     this.group = new Konva.Group({ x: model.x, y: model.y });
-    this.group.add(this.body);
-    this.group.add(this.head);
+
+    this.group.add(this.sprite);
   }
 
   // Convert bullet direction to rotation angle
@@ -43,6 +41,10 @@ export class BulletView {
   update() {
     this.group.position({ x: this.model.x, y: this.model.y });
     this.group.visible(this.model.active);
+  }
+
+  destroy() {
+    this.group.destroy();
   }
 
   // Return Konva group node for rendering

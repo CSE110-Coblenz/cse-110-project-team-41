@@ -4,8 +4,7 @@ import type { ScreenSwitcher } from "../../types";
 import { HuntingScreenModel } from "./HuntingScreenModel";
 import { HuntingScreenView } from "./HuntingScreenView";
 import { PlayerController } from "../../components/Player/PlayerController";
-import { ObstacleModel } from "../../components/Obstacle/ObstacleModel";
-import { ObstacleView } from "../../components/Obstacle/ObstacleView";
+import { ObstacleController } from "../../components/Obstacle/ObstacleController";
 import { EmuController } from "../../components/Emu/EmuController";
 import { BulletController } from "../../components/Bullet/BulletController";
 import { STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_HEIGHT, GAME_AREA_Y } from "../../constants";
@@ -19,8 +18,7 @@ export class HuntingScreenController extends ScreenController {
 
   // controllers & models
   private playerController!: PlayerController;
-  private obstacleModels: ObstacleModel[] = [];
-  private obstacleViews: ObstacleView[] = [];
+  private obstacleControllers: ObstacleController[] = [];
   private emuControllers: EmuController[] = [];
   private bulletControllers: BulletController[] = [];
 
@@ -37,7 +35,7 @@ export class HuntingScreenController extends ScreenController {
     return this.view;
   }
 
-  startGame2() {
+  startHuntingGame() {
     this.resetGame();
     this.model.startTimer();
     this.view.updateAmmo(this.model.getAmmo());
@@ -55,42 +53,45 @@ export class HuntingScreenController extends ScreenController {
     this.gameLoop();
   }
 
+  private cleanup(){
+    this.playerController?.getGroup().destroy();
+    
+    this.obstacleControllers.forEach((oc) => oc.getNode().destroy());
+    this.obstacleControllers = [];
+
+    this.emuControllers.forEach((ec) => ec.getGroup().destroy());
+    this.emuControllers = [];
+
+    this.bulletControllers.forEach((bc) => bc.getGroup().destroy());
+    this.bulletControllers = [];
+  }
+
   private resetGame() {
     // reset model
+    this.cleanup();
     this.model.reset();
-
-    // clear groups (if any) and re-create everything
-    // create obstacles (offset by HUD height)
-    this.obstacleModels = [];
-    this.obstacleViews = [];
     
     // Create rocks (gray rectangles)
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       const x = Math.random() * (STAGE_WIDTH - 100);
       const y = GAME_AREA_Y + Math.random() * (GAME_AREA_HEIGHT - 100);
-      const w = 40 + Math.random() * 40;
-      const h = 40 + Math.random() * 40;
-      const om = new ObstacleModel(x, y, w, h, "rock");
-      this.obstacleModels.push(om);
-      const ov = new ObstacleView(om);
-      this.obstacleViews.push(ov);
-      this.view.getGroup().add(ov.getNode());
+      let oc: ObstacleController;
+      if ( i < 6 ) {
+        const w = 40 + Math.random() * 40;
+        const h = 40 + Math.random() * 40;
+        oc = new ObstacleController(x, y, w, h, "rock");
+      }else{
+        const size = 30 + Math.random() * 30; // Diameter between 30-60
+        oc = new ObstacleController(x, y, size, size, "bush");
+      }
+      this.obstacleControllers.push(oc);
+      this.view.getGroup().add(oc.getNode());
     }
-    
-    // Create bushes (green circles)
-    for (let i = 0; i < 6; i++) {
-      const size = 30 + Math.random() * 30; // Diameter between 30-60
-      const x = Math.random() * (STAGE_WIDTH - 100);
-      const y = GAME_AREA_Y + Math.random() * (GAME_AREA_HEIGHT - 100);
-      const om = new ObstacleModel(x, y, size, size, "bush");
-      this.obstacleModels.push(om);
-      const ov = new ObstacleView(om);
-      this.obstacleViews.push(ov);
-      this.view.getGroup().add(ov.getNode());
-    }
+  
 
     // spawn player safely (offset by HUD height)
-    const playerPos = getSafeSpawnPosition(this.obstacleModels, 30, 30, GAME_AREA_Y, GAME_AREA_HEIGHT);
+    
+    const playerPos = getSafeSpawnPosition(this.obstacleControllers, 30, 30, GAME_AREA_Y, GAME_AREA_HEIGHT);
     this.playerController = new PlayerController(playerPos.x, playerPos.y);
     this.view.getGroup().add(this.playerController.getGroup());
 
@@ -98,14 +99,11 @@ export class HuntingScreenController extends ScreenController {
     this.emuControllers = [];
     const emuCount = Math.floor(Math.random() * 11) + 10; // Random between 10 and 20
     for (let i = 0; i < emuCount; i++) {
-      const emuPos = getSafeSpawnPosition(this.obstacleModels, 24, 24, GAME_AREA_Y, GAME_AREA_HEIGHT);
+      const emuPos = getSafeSpawnPosition(this.obstacleControllers, 24, 24, GAME_AREA_Y, GAME_AREA_HEIGHT);
       const ec = new EmuController(emuPos.x, emuPos.y);
       this.emuControllers.push(ec);
       this.view.getGroup().add(ec.getGroup());
     }
-
-    // clear bullets
-    this.bulletControllers = [];
   }
 
   private onKeyDown(e: KeyboardEvent) {
@@ -147,15 +145,15 @@ export class HuntingScreenController extends ScreenController {
     }
 
     // update player (with adjusted boundaries for game area)
-    this.playerController.update(this.keys, this.obstacleModels, STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_Y, GAME_AREA_HEIGHT);
+    this.playerController.update(this.keys, this.obstacleControllers, STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_Y, GAME_AREA_HEIGHT);
 
     // update bullets
-    this.bulletControllers.forEach((b) => b.update(this.obstacleModels));
+    this.bulletControllers.forEach((b) => b.update(this.obstacleControllers, STAGE_WIDTH, STAGE_HEIGHT));
     this.bulletControllers = this.bulletControllers.filter((b) => b.isActive());
 
     // update emus (with adjusted boundaries for game area)
     this.emuControllers.forEach((e) =>
-      e.update(this.obstacleModels, STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_Y, GAME_AREA_HEIGHT)
+      e.update(this.obstacleControllers, STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_Y, GAME_AREA_HEIGHT)
     );
 
     // check collisions (bullets -> emus)

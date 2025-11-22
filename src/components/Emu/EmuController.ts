@@ -1,6 +1,6 @@
 import { EmuModel } from "./EmuModel";
 import { EmuView } from "./EmuView";
-import type { ObstacleModel } from "../Obstacle/ObstacleModel";
+import type { ObstacleController } from "../Obstacle/ObstacleController";
 import type { BulletController } from "../Bullet/BulletController";
 
 export class EmuController {
@@ -13,7 +13,7 @@ export class EmuController {
     this.view = new EmuView(this.model);
   }
 
-  update(obstacles: ObstacleModel[], stageWidth: number, stageHeight: number, gameAreaY: number = 0, gameAreaHeight: number = stageHeight) {
+  update(obstacleControllers: ObstacleController[], stageWidth: number, stageHeight: number, gameAreaY: number = 0, gameAreaHeight: number = stageHeight) {
     if (!this.model.active) return;
 
     // Predict next position based on current direction
@@ -36,6 +36,7 @@ export class EmuController {
 
     // Check for obstacle collision
     const nextBox = { x: nextX, y: nextY, w: radius * 2, h: radius * 2 };
+    const obstacles = obstacleControllers.map(c => c.getModel());
     const blockedByObstacle = obstacles.some((o) => o.collides(nextBox));
 
     if (blockedByObstacle || hitBoundary) {

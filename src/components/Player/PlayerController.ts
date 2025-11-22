@@ -1,6 +1,6 @@
 import { PlayerModel } from "./PlayerModel";
 import { PlayerView } from "./PlayerView";
-import type { ObstacleModel } from "../Obstacle/ObstacleModel";
+import type { ObstacleController } from "../Obstacle/ObstacleController";
 import { BulletController } from "../Bullet/BulletController";
 
 // PlayerController: Handles player input, movement, collision, and shooting
@@ -15,7 +15,7 @@ export class PlayerController {
   }
 
   // Update player position based on input keys and obstacles
-  update(keys: Set<string>, obstacles: ObstacleModel[], stageWidth: number, stageHeight: number, gameAreaY: number = 0, gameAreaHeight: number = stageHeight) {
+  update(keys: Set<string>, obstacleControllers: ObstacleController[], stageWidth: number, stageHeight: number, gameAreaY: number = 0, gameAreaHeight: number = stageHeight) {
     const speed = this.model.speed;
     let dx = 0,
       dy = 0;
@@ -54,6 +54,7 @@ export class PlayerController {
 
     // Check for obstacle collisions
     const nextBox = { x: nextX, y: nextY, w: 30, h: 30 };
+    const obstacles = obstacleControllers.map(c => c.getModel());
     const blocked = obstacles.some((o) => o.collides(nextBox));
     if (!blocked) {
       this.model.x = nextX;
