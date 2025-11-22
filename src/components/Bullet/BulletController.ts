@@ -12,19 +12,26 @@ export class BulletController {
     this.view = new BulletView(this.model);
   }
 
-  update(obstacles: ObstacleModel[]) {
+  update(obstacles: ObstacleModel[], stageWidth: number, stageHeight: number) {
     // Skip update if bullet is inactive
     if (!this.model.active) return;
 
     // Move bullet based on its direction
     this.model.update();
 
+    //Check for out-of-bounds
+    const { x, y } = this.model;
+    if (x < 0 || x > stageWidth || y < 0 || y > stageHeight) {
+      this.destroy();
+      return;
+    }
     // Check for collision with obstacles
     const box = this.model.boundingBox();
     const hit = obstacles.some((o) => o.collides(box));
     if (hit) {
       // Deactivate bullet when it hits an obstacle
-      this.model.destroy();
+      this.destroy();
+      return;
     }
 
     // Refresh view position and visibility
@@ -44,7 +51,7 @@ export class BulletController {
   // Force bullet to be destroyed and update view
   destroy() {
     this.model.destroy();
-    this.view.update();
+    this.view.destroy();
   }
 
   // Get current bullet position

@@ -43,6 +43,10 @@ export class BulletView {
     this.group.visible(this.model.active);
   }
 
+  destroy() {
+    this.group.destroy();
+  }
+
   // Return Konva group node for rendering
   getGroup() {
     return this.group;

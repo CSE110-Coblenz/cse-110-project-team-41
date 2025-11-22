@@ -152,7 +152,7 @@ export class HuntingScreenController extends ScreenController {
     this.playerController.update(this.keys, this.obstacleModels, STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_Y, GAME_AREA_HEIGHT);
 
     // update bullets
-    this.bulletControllers.forEach((b) => b.update(this.obstacleModels));
+    this.bulletControllers.forEach((b) => b.update(this.obstacleModels, STAGE_WIDTH, STAGE_HEIGHT));
     this.bulletControllers = this.bulletControllers.filter((b) => b.isActive());
 
     // update emus (with adjusted boundaries for game area)
