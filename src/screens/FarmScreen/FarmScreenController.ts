@@ -9,6 +9,7 @@ import { ScreenController } from "../../types.ts";
 import type { MorningEventsScreenController } from "../MorningEventsScreen/MorningEventsScreenController.ts";
 import { FarmScreenModel } from "./FarmScreenModel.ts";
 import { FarmScreenView } from "./FarmScreenView.ts";
+import { GameItem } from "../../constants.ts";
 
 /**
  * GameScreenController - Coordinates game logic between Model and View
@@ -155,7 +156,7 @@ export class FarmScreenController extends ScreenController {
 	private registerPlanter(planter: FarmPlanterController): void {
 		this.planters.push(planter);
 		planter.setOnHarvest(() => {
-			this.status.addToInventory("crop", 1);
+			this.status.addToInventory(GameItem.Crop, 1);
 			this.audio.playSfx("harvest");
 			this.updateCropDisplay();
 		});
@@ -191,8 +192,8 @@ export class FarmScreenController extends ScreenController {
 	}
 
     private updateCropDisplay(): void {
-        this.view.updateCropCount(this.status.getItemCount("crop"));
-        this.view.updateMineCount(this.status.getItemCount("mine"));
+        this.view.updateCropCount(this.status.getItemCount(GameItem.Crop));
+        this.view.updateMineCount(this.status.getItemCount(GameItem.Mine));
     }
 
 	private checkMineCollisions(): void {
@@ -281,14 +282,14 @@ export class FarmScreenController extends ScreenController {
     }
 
 	private handleDeployMine(): void {
-		if (this.status.getItemCount("mine") <= 0) {
+		if (this.status.getItemCount(GameItem.Mine) <= 0) {
 			return;
 		}
 		const placement = this.view.deployMineAtMouse();
 		if (!placement) {
 			return;
 		}
-		const ok = this.status.removeFromInventory("mine", 1);
+		const ok = this.status.removeFromInventory(GameItem.Mine, 1);
 		if (!ok) {
 			this.view.removeMineSprite(placement.node);
 			return;

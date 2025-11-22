@@ -1,13 +1,11 @@
-import { STARTING_EMU_COUNT } from "../constants";
+import { GameItem, STARTING_EMU_COUNT } from "../constants";
 
-type Inventory = Record<string, number>;
+export type Inventory = Record<GameItem, number>;
 
 type PersistedState = {
     day: number;
-    money: number;
     inventory: Inventory;
     emuCount: number;
-    emuEggs: number;
 };
 
 const STORAGE_KEY = "game:status";
@@ -19,18 +17,14 @@ const STORAGE_KEY = "game:status";
 export class GameStatusController {
     private emuCount!: number;
     private day!: number;
-    private money!: number;
     private inventory!: Inventory;
-	private emuEggs!: number;
 
     constructor() {
         const saved = this.load();
         if (saved) {
             this.day = saved.day;
-            this.money = saved.money;
             this.inventory = saved.inventory;
             this.emuCount = saved.emuCount;
-            this.emuEggs = saved.emuEggs;
         } else {
             this.reset();
         }
@@ -40,10 +34,8 @@ export class GameStatusController {
     private save(): void {
         const s: PersistedState = {
             day: this.day,
-            money: this.money,
             inventory: this.inventory,
             emuCount: this.emuCount,
-            emuEggs: this.emuEggs
         };
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
     }
@@ -71,38 +63,34 @@ export class GameStatusController {
         this.save();
     }
 
-    // Money helpers
-    getMoney(): number { return this.money; }
-
-    addMoney(amount: number): void {
-        this.money = Math.max(0, this.money + amount);
-        this.save();
-    }
-
-    canAfford(cost: number): boolean { return this.money >= cost; }
+    canAfford(cost: number): boolean { return this.inventory.money >= cost; }
 
     spend(cost: number): boolean {
-        if (this.money < cost) return false;
-        this.money -= cost;
+        if (this.inventory.money < cost) return false;
+        this.inventory.money -= cost;
         this.save();
         return true;
     }
 
-    // Inventory helpers
-    getItemCount(name: string): number {
-        return this.inventory[name] ?? 0;
+    getInventory(): Inventory {
+        return this.inventory;
     }
 
-    addToInventory(name: string, qty: number): void {
-        const current = this.inventory[name] ?? 0;
-        this.inventory[name] = Math.max(0, current + qty);
+    // Inventory helpers
+    getItemCount(item: GameItem): number {
+        return this.inventory[item] ?? 0;
+    }
+
+    addToInventory(item: GameItem, qty: number): void {
+        const current = this.inventory[item] ?? 0;
+        this.inventory[item] = Math.max(0, current + qty);
         this.save();
     }
 
-    removeFromInventory(name: string, qty: number): boolean {
-        const current = this.inventory[name] ?? 0;
+    removeFromInventory(item: GameItem, qty: number): boolean {
+        const current = this.inventory[item] ?? 0;
         if (current < qty) return false;
-        this.inventory[name] = current - qty;
+        this.inventory[item] = current - qty;
         this.save();
         return true;
     }
@@ -114,30 +102,18 @@ export class GameStatusController {
         return this.day;
     }
 
-	/**
-	 * Adds collected eggs to the main game's inventory.
-	 */
-	public addEmuEggs(amount: number): void {
-		this.emuEggs += amount;
-		console.log(`Total eggs: ${this.emuEggs}`); // For debugging
-	}
-
-	/**
-	 * Gets the total number of emu eggs.
-	 */
-	public getEmuEggCount(): number {
-		return this.emuEggs;
-	}
-
     /**
 	 * Resets the game status to initial values.
 	 */
     public reset(): void {
 		this.day = 1;
-		this.money = 0;
-		this.inventory = {};
+		this.inventory = {
+            money: 0,
+            crop: 0,
+            mine: 0,
+            egg: 0
+        };
 		this.emuCount = STARTING_EMU_COUNT;
-		this.emuEggs = 0;
 		this.save(); 
 	}
 }
