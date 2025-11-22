@@ -1,6 +1,7 @@
 import { BulletModel } from "./BulletModel";
 import { BulletView } from "./BulletView";
 import type { ObstacleController } from "../Obstacle/ObstacleController";
+import { GAME_AREA_Y } from "../../constants";
 
 export class BulletController {
   model: BulletModel;
@@ -21,7 +22,7 @@ export class BulletController {
 
     //Check for out-of-bounds
     const { x, y } = this.model;
-    if (x < 0 || x > stageWidth || y < 0 || y > stageHeight) {
+    if (x < 0 || x > stageWidth || y < GAME_AREA_Y || y > stageHeight) {
       this.destroy();
       return;
     }
