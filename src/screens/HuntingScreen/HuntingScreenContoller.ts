@@ -37,7 +37,7 @@ export class HuntingScreenController extends ScreenController {
     return this.view;
   }
 
-  startGame2() {
+  startHuntingGame() {
     this.resetGame();
     this.model.startTimer();
     this.view.updateAmmo(this.model.getAmmo());

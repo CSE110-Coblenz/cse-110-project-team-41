@@ -97,7 +97,7 @@ class App implements ScreenSwitcher {
 
 			case "minigame2":
 				// Start the second minigame
-				this.huntingController.startGame2();
+				this.huntingController.startHuntingGame();
 				break;
 
 			case "minigame2_end":
