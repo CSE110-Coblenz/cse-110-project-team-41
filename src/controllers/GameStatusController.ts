@@ -17,11 +17,11 @@ const STORAGE_KEY = "game:status";
  * Holds day progression, money, and simple inventory for morning events.
  */
 export class GameStatusController {
-    private emuCount: number;
-    private day: number;
-    private money: number;
-    private inventory: Inventory;
-	private emuEggs: number;
+    private emuCount!: number;
+    private day!: number;
+    private money!: number;
+    private inventory!: Inventory;
+	private emuEggs!: number;
 
     constructor() {
         const saved = this.load();
@@ -32,12 +32,7 @@ export class GameStatusController {
             this.emuCount = saved.emuCount;
             this.emuEggs = saved.emuEggs;
         } else {
-            this.day = 1;
-            this.money = 0;
-            this.inventory = {};
-            this.emuCount = STARTING_EMU_COUNT;
-            this.emuEggs = 0;
-            this.save();
+            this.reset();
         }
     }
 
@@ -132,5 +127,17 @@ export class GameStatusController {
 	 */
 	public getEmuEggCount(): number {
 		return this.emuEggs;
+	}
+
+    /**
+	 * Resets the game status to initial values.
+	 */
+    public reset(): void {
+		this.day = 1;
+		this.money = 0;
+		this.inventory = {};
+		this.emuCount = STARTING_EMU_COUNT;
+		this.emuEggs = 0;
+		this.save(); 
 	}
 }

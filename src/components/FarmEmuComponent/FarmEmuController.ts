@@ -80,4 +80,8 @@ export class FarmEmuController {
 	remove(): void{
 		this.view.removeFromGroup();
 	}
+
+	reduceHealth(amount: number): void {
+    	this.model.decrementHealth(amount);
+	}
 }

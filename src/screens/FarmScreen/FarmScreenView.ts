@@ -1,9 +1,12 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
-import {STAGE_WIDTH, STAGE_HEIGHT, PLANTER_WIDTH} from "../../constants.ts";
+import {STAGE_WIDTH, STAGE_HEIGHT, PLANTER_WIDTH, HUD_HEIGHT} from "../../constants.ts";
 import {FarmPlanterController} from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
 import {FarmEmuController} from "../../components/FarmEmuComponent/FarmEmuController.ts";
 import mineSrc from "../../../assets/mine.png";
+import flagSrc from "../../../assets/flag.png";
+import chevronSrc from "../../../assets/chevron.png";
+import pauseSrc from "../../../assets/pause.png";
 
 const createImage = (src: string): HTMLImageElement => {
 	if (typeof Image !== "undefined") {
@@ -18,6 +21,9 @@ const createImage = (src: string): HTMLImageElement => {
 };
 
 const mineImage = createImage(mineSrc);
+const flagImage = createImage(flagSrc);
+const chevronImage = createImage(chevronSrc);
+const pauseImage = createImage(pauseSrc);
 const MINE_SIZE = 42;
 
 /**
@@ -25,30 +31,28 @@ const MINE_SIZE = 42;
  */
 export class FarmScreenView implements View {
 	private group: Konva.Group;
-	private player: Konva.Rect | null = null;
+	private menuGroup: Konva.Group;
+	private hudGroup: Konva.Group;
+
 	private scoreText: Konva.Text;
 	private cropText: Konva.Text;
 	private mineText: Konva.Text;
-	private startDayButton: Konva.Text;
-	private menuButton: Konva.Group;
-	private menuOverlay: Konva.Group;
 	private minesLayer: Konva.Group;
+	private hudBanner: Konva.Rect;
 	private mines: Konva.Image[] = [];
 	private menuButtonHandler: (() => void) | null = null;
 	private menuSaveHandler: (() => void) | null = null;
 	private menuBackHandler: (() => void) | null = null;
-	private registerEmu: (emu: FarmEmuController) => void = null;
-	private removeEmus: () => void = null;
-	private timerText: Konva.Text;
-	private roundText: Konva.Text;
+	private registerEmu: ((emu: FarmEmuController) => void) | null = null;
+	private removeEmus: (() => void )| null = null;
 	private mineInstructionText: Konva.Text;
 	private mouseX: number = 0;
 	private mouseY: number = 0;
 
 	constructor(
 		handleKeydown: (event: KeyboardEvent) => void,
-		handleKeyup: (event: KeyboardEvent) => void,
 		handleStartDay: () => void,
+		handleEndGame: () => void,
 		registerEmu: (emu: FarmEmuController) => void,
 		removeEmus: () => void,
 		registerPlanter: (planter: FarmPlanterController) => void,
@@ -60,24 +64,8 @@ export class FarmScreenView implements View {
 			const keyboardEvent = event as KeyboardEvent;
 			handleKeydown(keyboardEvent);
 		});
-		window.addEventListener("keyup", (event) => {
-			const keyboardEvent = event as KeyboardEvent;
-			handleKeyup(keyboardEvent);
-		});
 
 		this.group = new Konva.Group({ visible: false });
-
-		// Background
-		const bg = new Konva.Rect({
-			x: 0,
-			y: 0,
-			width: STAGE_WIDTH,
-			height: STAGE_HEIGHT,
-			fill: "#009900", // Sky blue
-		});
-		this.group.add(bg);
-
-		// Track mouse position for mine placement
 		this.group.on("mousemove", (e) => {
 			const stage = e.target.getStage();
 			if (stage) {
@@ -89,126 +77,151 @@ export class FarmScreenView implements View {
 			}
 		});
 
-		this.player = new Konva.Rect({
+		/**
+		 * Create main components of scene: Background, Planters, Mines
+		 */
+		const bg = new Konva.Rect({
 			x: 0,
 			y: 0,
-			width: 30,
-			height: 30,
-			fill: "#AA0000",
+			width: STAGE_WIDTH,
+			height: STAGE_HEIGHT,
+			fill: "#009900",
 		});
-		this.group.add(this.player);
+		this.group.add(bg);
+
+		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
+			for (let y = 200; y < (STAGE_HEIGHT); y += (STAGE_HEIGHT - 200) / 4) {
+				const planter = new FarmPlanterController(this.group, x, y);
+				registerPlanter(planter);
+			}
+		}
+
 		this.minesLayer = new Konva.Group({ listening: false });
 		this.group.add(this.minesLayer);
 
-		// Score display (top-left)
-		this.scoreText = new Konva.Text({
-			x: 20,
-			y: 20,
-			text: "Score: 0",
-			fontSize: 32,
-			fontFamily: "Arial",
-			fill: "black",
+		/**
+		 * Create primary visual HUD: Status indicators and buttons
+		 */
+		this.hudGroup = new Konva.Group();
+	
+		this.hudBanner = new Konva.Rect({
+			x: 0,
+			y: 0,
+			width: STAGE_WIDTH,
+			height: HUD_HEIGHT,
+			fill: "rgba(0, 0, 0, 0.6)",
 		});
-		this.group.add(this.scoreText);
+		this.hudGroup.add(this.hudBanner);
+
+		this.scoreText = new Konva.Text({
+			x: 10,
+			y: 10,
+			text: "Score: 0",
+			fontSize: 14,
+			fontFamily: "Arial",
+			fill: "white",
+		});
+		this.hudGroup.add(this.scoreText);
 
 		this.cropText = new Konva.Text({
-			x: 20,
-			y: 60,
+			x: 10,
+			y: 25,
 			text: "Crops: 0",
-			fontSize: 28,
+			fontSize: 14,
 			fontFamily: "Arial",
-			fill: "black",
+			fill: "white",
 		});
-		this.group.add(this.cropText);
+		this.hudGroup.add(this.cropText);
 
 		this.mineText = new Konva.Text({
-			x: 20,
-			y: 92,
+			x: 10,
+			y: 40,
 			text: "Mines: 0",
-			fontSize: 22,
+			fontSize: 14,
 			fontFamily: "Arial",
-			fill: "black",
+			fill: "white",
 		});
-		this.group.add(this.mineText);
+		this.hudGroup.add(this.mineText);
 
 		this.mineInstructionText = new Konva.Text({
-			x: 20,
-			y: 120,
+			x: 10,
+			y: 60,
 			text: "Press M to place mine at mouse cursor",
-			fontSize: 16,
+			fontSize: 12,
 			fontFamily: "Arial",
 			fill: "#666666",
 		});
-		this.group.add(this.mineInstructionText);
+		this.hudGroup.add(this.mineInstructionText);
 
-		this.menuButton = new Konva.Group({
-			x: STAGE_WIDTH / 2 - 80,
-			y: 130,
-			cursor: "pointer",
+		const pauseGroup = new Konva.Group();
+		const pauseButton = new Konva.Image({
+			x: STAGE_WIDTH - 175,
+			y: 25,
+			width: 30,
+			height: 30,
+			image: pauseImage,
 		});
-
-		const menuButtonRect = new Konva.Rect({
-			width: 160,
-			height: 50,
-			fill: "#c62828",
+		const pauseBackground = new Konva.Rect({
+			x: STAGE_WIDTH - 180,
+			y: 20,
+			width: 40,
+			height: 40,
+			fill: "grey",
 			cornerRadius: 8,
-			stroke: "#ffffff",
-			strokeWidth: 2,
-		});
+		})
+		pauseButton.on("mouseup", () => this.menuButtonHandler!())
+		pauseGroup.add(pauseBackground);
+		pauseGroup.add(pauseButton);
+		this.hudGroup.add(pauseGroup);
 
-		const menuButtonText = new Konva.Text({
-			text: "Menu",
-			fontSize: 24,
-			fontFamily: "Arial",
-			fill: "white",
-			width: 160,
-			height: 50,
-			y: 12,
-			align: "center",
+		const startDayGroup = new Konva.Group();
+		const startDayButton = new Konva.Image({
+			x: STAGE_WIDTH - 115,
+			y: 25,
+			width: 30,
+			height: 30,
+			image: chevronImage,
 		});
-
-		this.menuButton.add(menuButtonRect);
-		this.menuButton.add(menuButtonText);
-		this.menuButton.on("mouseup", () => {
-			this.menuButtonHandler?.();
-		});
-		this.group.add(this.menuButton);
-
-		// Start day button display
-		this.startDayButton = new Konva.Text({
-			x: STAGE_WIDTH - 150,
+		const startDayBackground = new Konva.Rect({
+			x: STAGE_WIDTH - 120,
 			y: 20,
-			text: "End Day",
-			fontSize: 32,
-			fontFamily: "Arial",
+			width: 40,
+			height: 40,
+			fill: "green",
+			cornerRadius: 8,
+		})
+		startDayButton.on("mouseup", handleStartDay)
+		startDayGroup.add(startDayBackground);
+		startDayGroup.add(startDayButton);
+		this.hudGroup.add(startDayGroup);
+
+		const endGameGroup = new Konva.Group();
+		const endGameButton = new Konva.Image({
+			x: STAGE_WIDTH - 55,
+			y: 25,
+			width: 30,
+			height: 30,
+			image: flagImage,
+		});
+		const endGameBackground = new Konva.Rect({
+			x: STAGE_WIDTH - 60,
+			y: 20,
+			width: 40,
+			height: 40,
 			fill: "red",
-		});
-		this.startDayButton.on("mouseup", handleStartDay)
-		this.group.add(this.startDayButton);
+			cornerRadius: 8,
+		})
+		endGameButton.on("mouseup", handleEndGame)
+		endGameGroup.add(endGameBackground);
+		endGameGroup.add(endGameButton);
+		this.hudGroup.add(endGameGroup);
+		
+		this.group.add(this.hudGroup);
 
-		// Timer display
-		this.timerText = new Konva.Text({
-			x: STAGE_WIDTH - 300,
-			y: 20,
-			text: "Time: 60",
-			fontSize: 32,
-			fontFamily: "Arial",
-			fill: "blue",
-		});
-		this.group.add(this.timerText);
-
-		//Round display (now shows day)
-		this.roundText = new Konva.Text({
-			x: STAGE_WIDTH - 530,
-			y: 20,
-			text: "Day: 1",
-			fontSize: 32,
-			fontFamily: "Arial",
-			fill: "black",
-		});
-		this.group.add(this.roundText);
-
-		this.menuOverlay = new Konva.Group({ visible: false });
+		/**
+		 * Create secondary hidden hud for main menu
+		 */
+		this.menuGroup = new Konva.Group({ visible: false });
 
 		const overlayBackground = new Konva.Rect({
 			x: 0,
@@ -282,14 +295,12 @@ export class FarmScreenView implements View {
 			y: panelY + 170,
 			cursor: "pointer",
 		});
-
 		const backRect = new Konva.Rect({
 			width: panelWidth - 80,
 			height: 56,
 			fill: "#c62828",
 			cornerRadius: 10,
 		});
-
 		const backText = new Konva.Text({
 			text: "Back to Game",
 			fontSize: 24,
@@ -299,29 +310,20 @@ export class FarmScreenView implements View {
 			y: 14,
 			align: "center",
 		});
-
 		backButton.add(backRect);
 		backButton.add(backText);
 		backButton.on("mouseup", () => {
 			this.menuBackHandler?.();
 		});
 
-		this.menuOverlay.add(overlayBackground);
-		this.menuOverlay.add(overlayPanel);
-		this.menuOverlay.add(overlayTitle);
-		this.menuOverlay.add(saveButton);
-		this.menuOverlay.add(backButton);
-		this.group.add(this.menuOverlay);
+		this.menuGroup.add(overlayBackground);
+		this.menuGroup.add(overlayPanel);
+		this.menuGroup.add(overlayTitle);
+		this.menuGroup.add(saveButton);
+		this.menuGroup.add(backButton);
 
-		// Planters
-		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
-			for (let y = 200; y < (STAGE_HEIGHT); y += (STAGE_HEIGHT - 200) / 4) {
-				const planter = new FarmPlanterController(this.group, x, y);
-				registerPlanter(planter);
-			}
-		}
+		this.group.add(this.menuGroup);
 	}
-
 	spawnEmus(n: number): void {
 		if (!this.registerEmu) return;
 
@@ -368,12 +370,12 @@ export class FarmScreenView implements View {
 	}
 
 	showMenuOverlay(): void {
-		this.menuOverlay.visible(true);
+		this.menuGroup.visible(true);
 		this.group.getLayer()?.draw();
 	}
 
 	hideMenuOverlay(): void {
-		this.menuOverlay.visible(false);
+		this.menuGroup.visible(false);
 		this.group.getLayer()?.draw();
 	}
 
@@ -406,34 +408,6 @@ export class FarmScreenView implements View {
 		this.mines = [];
 		this.minesLayer.destroyChildren();
 		this.group.getLayer()?.draw();
-	}
-
-	/**
-	 * Update timer display
-	 */
-	updateTimer(timeRemaining: number): void {
-		this.timerText.text(`Time: ${timeRemaining}`);
-		this.group.getLayer()?.draw();
-	}
-
-	/**
-	 * Update round display (now shows day)
-	 */
-	updateRound(day: number): void {
-		this.roundText.text(`Day: ${day}`);
-		this.group.getLayer()?.draw();
-	}
-
-	/**
-	 * Move the player a certain distance in a cardinal vector
-	 *
-	 * @param dx
-	 * @param dy
-	 */
-	movePlayerDelta(dx: number, dy: number): void {
-		if (!this.player) return;
-		this.player.x(this.player.x() + dx);
-		this.player.y(this.player.y() + dy);
 	}
 
 	/**

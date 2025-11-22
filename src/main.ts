@@ -35,6 +35,29 @@ class App implements ScreenSwitcher {
 
 		this.audioManager = new AudioManager();
 		this.gameStatusController = new GameStatusController();
+		this.menuController = new MainMenuScreenController(this);
+		this.huntingController = new HuntingScreenController(this);
+		this.huntingIntroController = new HuntingIntroScreenController(this);
+		this.huntingEndController = new HuntingEndScreenController(this);
+		this.farmController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
+		this.resultsController = new GameOverScreenController(this, this.gameStatusController, this.audioManager);
+		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
+		this.farmController.setMorningController(this.morningController);
+		this.raidController = new RaidController(
+			this,
+			this.gameStatusController
+		);
+
+		this.layer.add(this.menuController.getView().getGroup());
+		this.layer.add(this.farmController.getView().getGroup());
+		this.layer.add(this.huntingController.getView().getGroup());
+		this.layer.add(this.huntingIntroController.getView().getGroup());
+		this.layer.add(this.huntingEndController.getView().getGroup());
+		this.layer.add(this.resultsController.getView().getGroup());
+		this.layer.add(this.morningController.getView().getGroup());
+		this.layer.add(this.raidController.getView().getGroup());
+
+		this.layer.draw();
 
 		// Initialize menu controller
 		this.menuController = new MainMenuScreenController(this);
@@ -83,6 +106,9 @@ class App implements ScreenSwitcher {
 				const gameOverController = new GameOverScreenController(this, this.audioManager);
 				this.layer.add(gameOverController.getView().getGroup());
 				gameOverController.show();
+				// Show results with the final score
+				this.audioManager.playBgm("gameover");
+				this.resultsController.showFinalResults(screen.survivalDays, screen.score);
 				break;
 			case "minigame1_raid":
 				const raidController = new RaidController(this, this.gameStatusController, this.audioManager);

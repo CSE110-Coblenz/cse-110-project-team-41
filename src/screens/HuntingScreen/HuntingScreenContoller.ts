@@ -8,12 +8,8 @@ import { ObstacleModel } from "../../components/Obstacle/ObstacleModel";
 import { ObstacleView } from "../../components/Obstacle/ObstacleView";
 import { EmuController } from "../../components/Emu/EmuController";
 import { BulletController } from "../../components/Bullet/BulletController";
-import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants";
+import { STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_HEIGHT, GAME_AREA_Y } from "../../constants";
 import { getSafeSpawnPosition } from "../../utils/getSafeSpawnPosition";
-
-const HUD_HEIGHT = 80; // Height of the HUD banner
-const GAME_AREA_Y = HUD_HEIGHT; // Game area starts below HUD
-const GAME_AREA_HEIGHT = STAGE_HEIGHT - HUD_HEIGHT; // Available game area height
 
 export class HuntingScreenController extends ScreenController {
   private model: HuntingScreenModel;
