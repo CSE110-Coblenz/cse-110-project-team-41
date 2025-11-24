@@ -359,7 +359,7 @@ export class FarmScreenController extends ScreenController {
 	private handleEndGame(): void {
 		// End game button - trigger game over
 		this.stopTimer();
-		this.screenSwitcher.switchToScreen({ type: "game_over", score: this.status.getFinalScore() });
+		this.screenSwitcher.switchToScreen({ type: "game_over",survivalDays:this.status.getSurvivalDay() ,score: this.status.getFinalScore() });
 	}
 
 	/**
