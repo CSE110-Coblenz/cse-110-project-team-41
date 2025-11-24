@@ -21,7 +21,6 @@ export class FarmEmuView {
 
 	constructor(group: Konva.Group, startX: number, startY: number) {
 		const sprite = createImage(emuSrc);
-		const dummy = new window.Image();
 		this.emu = new Konva.Image({
 			x: startX,
 			y: startY,
@@ -29,7 +28,6 @@ export class FarmEmuView {
 			height: 36,
 			image: sprite,
 			listening: false,
-			image: dummy,
 		});
 
 		if (!sprite.complete) {

@@ -3,8 +3,9 @@ import { ObstacleModel } from "./ObstacleModel";
 
 export class ObstacleView {
   private shape: Konva.Rect | Konva.Circle;
+  private model: ObstacleModel;
   constructor(model: ObstacleModel) {
-    
+    this.model = model;
     if (model.type === "rock") {
       // Gray rectangle/square for rocks
       this.shape = new Konva.Rect({
