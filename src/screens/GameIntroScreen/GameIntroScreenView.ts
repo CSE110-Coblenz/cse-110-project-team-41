@@ -72,7 +72,7 @@ export class GameIntroView {
       x: STAGE_WIDTH / 2 - 150,
       y: STAGE_HEIGHT - 50,
       width: 300,
-      text: isLastPage ? "Press SPACEBAR to START GAME" : "Press SPACEBAR to continue", // Minor text update
+      text: isLastPage ? "Press SPACEBAR to START GAME" : "Press SPACEBAR to continue\nPress ESC to skip", // Minor text update
       fontSize: 18,
       fontFamily: "Arial",
       fill: "#3498db",

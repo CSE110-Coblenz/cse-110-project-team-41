@@ -55,6 +55,12 @@ export class GameIntroController {
     }
 
     this.keydownHandler = (e: KeyboardEvent) => {
+      if (e.code === "Escape") {
+        e.preventDefault();
+        this.completeIntro(); // Skip directly to the end
+        return;
+      }
+      
       if (e.code === "Space") {
         e.preventDefault(); // Prevent page scrolling
         
