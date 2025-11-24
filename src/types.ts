@@ -16,6 +16,7 @@ export interface View {
  */
 export type Screen =
 	| { type: "main_menu" }
+	| { type: "game_intro" }
 	| { type: "farm" }
 	| { type: "minigame2_intro" }
 	| { type: "minigame2" }
