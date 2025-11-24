@@ -110,6 +110,13 @@ export class GameStatusController {
         return this.day;
     }
 
+    /**
+     * Get final score (use days survived for now)
+     */
+    getSurvivalDay(): number {
+        return this.day;
+    }
+
 	/**
 	 * Adds collected eggs to the main game's inventory.
 	 * Now uses the unified inventory system!

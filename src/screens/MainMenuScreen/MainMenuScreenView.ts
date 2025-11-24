@@ -29,7 +29,6 @@ export class MainMenuScreenView implements View {
 		this.group = new Konva.Group({ visible: true });
 
 		const bgImage = loadImage(backgroundSrc);
-		const dummy = new window.Image();
 		this.background = new Konva.Image({
 			x: -20,
 			y: -20,
@@ -37,7 +36,6 @@ export class MainMenuScreenView implements View {
 			height: STAGE_HEIGHT + 40,
 			image: bgImage,
 			listening: false,
-			image: dummy,
 		});
 		if (bgImage.complete) {
 			this.background.image(bgImage);
