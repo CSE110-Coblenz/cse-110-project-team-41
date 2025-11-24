@@ -7,7 +7,7 @@ export class FarmEmuModel {
 	/**
 	 * Reset game state for a new game
 	 */
-	decrimentHealth(amount: number): void {
+	decrementHealth(amount: number): void {
 		this.health -= amount;
 	}
 }

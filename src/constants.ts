@@ -13,3 +13,7 @@ export const EMU_WALK_RANDOMIZATION = 0.2;
 export const PLANTER_HEIGHT = 20;
 export const PLANTER_WIDTH = 40;
 export const ONE_OVER_ROOT_TWO = 1 / Math.sqrt(2);
+
+export const HUD_HEIGHT = 80; // Height of the HUD banner
+export const GAME_AREA_Y = HUD_HEIGHT; // Game area starts below HUD
+export const GAME_AREA_HEIGHT = STAGE_HEIGHT - HUD_HEIGHT; // Available game area height

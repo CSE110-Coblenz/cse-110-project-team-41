@@ -44,7 +44,7 @@ class App implements ScreenSwitcher {
 		this.huntingIntroController = new HuntingIntroScreenController(this);
 		this.huntingEndController = new HuntingEndScreenController(this);
 		this.farmController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
-		this.resultsController = new GameOverScreenController(this, this.audioManager);
+		this.resultsController = new GameOverScreenController(this, this.gameStatusController, this.audioManager);
 		this.morningController = new MorningEventsScreenController(this, this.gameStatusController, this.audioManager);
 		this.farmController.setMorningController(this.morningController);
 		this.raidController = new RaidController(
@@ -97,7 +97,7 @@ class App implements ScreenSwitcher {
 
 			case "minigame2":
 				// Start the second minigame
-				this.huntingController.startGame2();
+				this.huntingController.startHuntingGame();
 				break;
 
 			case "minigame2_end":
@@ -113,7 +113,7 @@ class App implements ScreenSwitcher {
 			case "game_over":
 				// Show results with the final score
 				this.audioManager.playBgm("gameover");
-				this.farmController.startGame();
+				this.resultsController.showFinalResults(screen.survivalDays, screen.score);
 				break;
 
 			case "minigame1_raid":

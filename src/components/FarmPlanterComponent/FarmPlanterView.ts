@@ -40,12 +40,14 @@ export class FarmPlanterView {
 		});
 		group.add(this.planter);
 
+		const dummy = new window.Image(); 
 		this.crop = new Konva.Image({
 			x,
 			y,
 			width: PLANTER_WIDTH,
 			height: PLANTER_HEIGHT,
 			listening: false,
+			image: dummy,
 		});
 		group.add(this.crop);
 

@@ -11,10 +11,10 @@
     "test:ui": "vitest"
   },
   "devDependencies": {
+    "happy-dom": "^15.10.3",
     "typescript": "~5.9.3",
     "vite": "^7.1.7",
-    "vitest": "^2.1.1",
-    "happy-dom": "^15.10.3"
+    "vitest": "^2.1.9"
   },
   "dependencies": {
     "konva": "^10.0.2"
