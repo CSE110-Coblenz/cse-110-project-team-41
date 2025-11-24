@@ -54,6 +54,10 @@ class App implements ScreenSwitcher {
 
 		this.layer.add(this.menuController.getView().getGroup());
 		this.layer.add(this.farmController.getView().getGroup());
+		const planningPhaseView = this.farmController.getPlanningPhaseView();
+		if (planningPhaseView) {
+			this.layer.add(planningPhaseView);
+		}
 		this.layer.add(this.huntingController.getView().getGroup());
 		this.layer.add(this.huntingIntroController.getView().getGroup());
 		this.layer.add(this.huntingEndController.getView().getGroup());
@@ -87,7 +91,7 @@ class App implements ScreenSwitcher {
 				// Start the game (which also shows the game screen)
 				this.audioManager.playBgm("farm");
 				this.farmController.startGame();
-				this.farmController.startRound();
+				// startGame() will call startRound() or show planning phase
 				break;
 
 			case "minigame2_intro":

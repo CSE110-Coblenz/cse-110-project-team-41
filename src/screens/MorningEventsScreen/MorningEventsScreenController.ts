@@ -1,15 +1,15 @@
 import { ScreenController, type ScreenSwitcher } from "../../types.ts";
-import { MorningEventsScreenModel } from "./MorningEventsScreenModel.ts";
 import { MorningEventsScreenView } from "./MorningEventsScreenView.ts";
 import { GameStatusController } from "../../controllers/GameStatusController.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
 import { QuizController, type QuizFact } from "../../controllers/QuizController.ts";
+import { DEFENSE_CONFIGS, type DefenseType } from "../../components/DefenseComponent/DefenseModel.ts";
+import { GameItem, ItemCosts, CROP_BUY_COST } from "../../constants.ts";
 
 /**
  * MorningEventsScreenController - Handles morning screen interactions
  */
 export class MorningEventsScreenController extends ScreenController {
-    private model: MorningEventsScreenModel;
     private view: MorningEventsScreenView;
     private screenSwitcher: ScreenSwitcher;
     private status: GameStatusController;
@@ -25,14 +25,16 @@ export class MorningEventsScreenController extends ScreenController {
         this.status = status;
         this.audio = audio;
 
-        this.model = new MorningEventsScreenModel();
         this.quiz = new QuizController();
         this.view = new MorningEventsScreenView(
             () => this.handleBuy(),
             () => this.handleSell(),
+            () => this.handleSellEgg(),
             () => this.handleContinue(),
             () => this.handleOpenQuiz(),
             (idx) => this.handleQuizChoice(idx),
+            () => this.handleOpenShop(),
+            (defenseType) => this.handlePurchaseDefense(defenseType),
         );
     }
 
@@ -66,7 +68,10 @@ export class MorningEventsScreenController extends ScreenController {
         const dayToShow = this.dayOverride ?? this.status.getDay();
         this.view.updateDay(dayToShow);
         this.view.updateMoney(this.status.getMoney());
-        this.view.updateInventory(this.status.getItemCount("crop"));
+        this.view.updateInventory(
+            this.status.getItemCount(GameItem.Crop),
+            this.status.getItemCount(GameItem.Egg)
+        );
         this.updateMorningContent();
     }
 
@@ -94,18 +99,26 @@ export class MorningEventsScreenController extends ScreenController {
     }
 
     private handleBuy(): void {
-        const cost = this.model.getCropBuyCost();
-        if (this.status.spend(cost)) {
-            this.status.addToInventory("crop", 1);
+        if (this.status.spend(CROP_BUY_COST)) {
+            this.status.addToInventory(GameItem.Crop, 1);
             this.audio.playSfx("buy");
             this.refreshUI();
         }
     }
 
     private handleSell(): void {
-        const price = this.model.getCropSellPrice();
-        if (this.status.removeFromInventory("crop", 1)) {
-            this.status.addMoney(price);
+        const price = ItemCosts[GameItem.Crop];
+        if (this.status.removeFromInventory(GameItem.Crop, 1)) {
+            this.status.addToInventory(GameItem.Money, price);
+            this.audio.playSfx("sell");
+            this.refreshUI();
+        }
+    }
+
+    private handleSellEgg(): void {
+        const price = ItemCosts[GameItem.Egg];
+        if (this.status.removeFromInventory(GameItem.Egg, 1)) {
+            this.status.addToInventory(GameItem.Money, price);
             this.audio.playSfx("sell");
             this.refreshUI();
         }
@@ -137,16 +150,58 @@ export class MorningEventsScreenController extends ScreenController {
         const correct = index === fact.correctIndex;
         if (correct) {
             // Reward: 1 Mine
-            this.status.addToInventory("mine", 1);
-            this.view.setInfoText("Correct! You received 1 Mine. Press M in the farm to deploy it.");
+            this.status.addToInventory(GameItem.Mine, 1);
+            this.audio.playSfx("buy"); // Play success sound
+            this.view.setInfoText("✓ CORRECT! You received 1 Mine!\nPress M in the farm to deploy it.", "#00aa00", 20); // Green, bigger
         } else {
-            this.view.setInfoText("Incorrect this time! Keep an eye on the facts and try again next time.");
+            this.audio.playSfx("harvest"); // Play failure sound
+            this.view.setInfoText("✗ Incorrect. Keep reading the facts and try again next time!", "#cc0000", 18); // Red
         }
         this.quiz.completeQuiz(dueDay);
         this.currentDueQuiz = null;
         this.view.hideQuizPopup();
         this.view.setDailyQuizButtonVisible(false);
         this.view.updateMoney(this.status.getMoney());
-        this.view.updateInventory(this.status.getItemCount("crop"));
+        this.view.updateInventory(
+            this.status.getItemCount(GameItem.Crop),
+            this.status.getItemCount(GameItem.Egg)
+        );
+    }
+
+    private handleOpenShop(): void {
+        const defenseInventory: Record<string, number> = {
+            barbed_wire: this.status.getItemCount(GameItem.BarbedWire),
+            sandbag: this.status.getItemCount(GameItem.Sandbag),
+            machine_gun: this.status.getItemCount(GameItem.MachineGun),
+        };
+        this.view.showShopPopup(defenseInventory, this.status.getMoney());
+    }
+
+    private handlePurchaseDefense(defenseType: string): void {
+        const type = defenseType as DefenseType;
+        const config = DEFENSE_CONFIGS[type];
+        
+        if (!config || config.cost === 0) {
+            return; // Can't buy mines (special item)
+        }
+
+        // Map defense type to GameItem
+        const itemMap: Record<DefenseType, GameItem> = {
+            'barbed_wire': GameItem.BarbedWire,
+            'sandbag': GameItem.Sandbag,
+            'machine_gun': GameItem.MachineGun,
+            'mine': GameItem.Mine,
+        };
+        const item = itemMap[type];
+
+        if (this.status.canAfford(config.cost)) {
+            if (this.status.spend(config.cost)) {
+                this.status.addToInventory(item, 1);
+                this.audio.playSfx("buy");
+                this.refreshUI();
+                // Refresh shop popup to show updated inventory and money
+                this.handleOpenShop();
+            }
+        }
     }
 }

@@ -1,13 +1,11 @@
-import { STARTING_EMU_COUNT } from "../constants";
+import { STARTING_EMU_COUNT, GameItem } from "../constants";
 
-type Inventory = Record<string, number>;
+export type Inventory = Record<GameItem, number>;
 
 type PersistedState = {
     day: number;
-    money: number;
     inventory: Inventory;
     emuCount: number;
-    emuEggs: number;
 };
 
 const STORAGE_KEY = "game:status";
@@ -19,18 +17,14 @@ const STORAGE_KEY = "game:status";
 export class GameStatusController {
     private emuCount!: number;
     private day!: number;
-    private money!: number;
     private inventory!: Inventory;
-	private emuEggs!: number;
 
     constructor() {
         const saved = this.load();
         if (saved) {
             this.day = saved.day;
-            this.money = saved.money;
             this.inventory = saved.inventory;
             this.emuCount = saved.emuCount;
-            this.emuEggs = saved.emuEggs;
         } else {
             this.reset();
         }
@@ -40,17 +34,11 @@ export class GameStatusController {
     private save(): void {
         const s: PersistedState = {
             day: this.day,
-            money: this.money,
             inventory: this.inventory,
             emuCount: this.emuCount,
-            emuEggs: this.emuEggs
         };
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
     }
-
-	public saveState(): void {
-		this.save();
-	}
 
     private load(): PersistedState | null {
         try {
@@ -71,38 +59,46 @@ export class GameStatusController {
         this.save();
     }
 
-    // Money helpers
-    getMoney(): number { return this.money; }
-
-    addMoney(amount: number): void {
-        this.money = Math.max(0, this.money + amount);
-        this.save();
+    // Money helpers (backward compatible!)
+    getMoney(): number { 
+        return this.getItemCount(GameItem.Money); 
     }
 
-    canAfford(cost: number): boolean { return this.money >= cost; }
+    addMoney(amount: number): void {
+        this.addToInventory(GameItem.Money, amount);
+    }
+
+    canAfford(cost: number): boolean { 
+        return this.inventory[GameItem.Money] >= cost; 
+    }
 
     spend(cost: number): boolean {
-        if (this.money < cost) return false;
-        this.money -= cost;
+        if (this.inventory[GameItem.Money] < cost) return false;
+        this.inventory[GameItem.Money] -= cost;
         this.save();
         return true;
     }
 
-    // Inventory helpers
-    getItemCount(name: string): number {
-        return this.inventory[name] ?? 0;
+    // Get full inventory (useful for UI)
+    getInventory(): Inventory {
+        return this.inventory;
     }
 
-    addToInventory(name: string, qty: number): void {
-        const current = this.inventory[name] ?? 0;
-        this.inventory[name] = Math.max(0, current + qty);
+    // Inventory helpers (now type-safe!)
+    getItemCount(item: GameItem): number {
+        return this.inventory[item] ?? 0;
+    }
+
+    addToInventory(item: GameItem, qty: number): void {
+        const current = this.inventory[item] ?? 0;
+        this.inventory[item] = Math.max(0, current + qty);
         this.save();
     }
 
-    removeFromInventory(name: string, qty: number): boolean {
-        const current = this.inventory[name] ?? 0;
+    removeFromInventory(item: GameItem, qty: number): boolean {
+        const current = this.inventory[item] ?? 0;
         if (current < qty) return false;
-        this.inventory[name] = current - qty;
+        this.inventory[item] = current - qty;
         this.save();
         return true;
     }
@@ -116,28 +112,36 @@ export class GameStatusController {
 
 	/**
 	 * Adds collected eggs to the main game's inventory.
+	 * Now uses the unified inventory system!
 	 */
 	public addEmuEggs(amount: number): void {
-		this.emuEggs += amount;
-		console.log(`Total eggs: ${this.emuEggs}`); // For debugging
+		this.addToInventory(GameItem.Egg, amount);
+		console.log(`Total eggs: ${this.getItemCount(GameItem.Egg)}`);
 	}
 
 	/**
 	 * Gets the total number of emu eggs.
+	 * Now uses the unified inventory system!
 	 */
 	public getEmuEggCount(): number {
-		return this.emuEggs;
+		return this.getItemCount(GameItem.Egg);
 	}
 
-    /**
-	 * Resets the game status to initial values.
+	/**
+	 * Reset game state for a new game
 	 */
-    public reset(): void {
+	reset(): void {
 		this.day = 1;
-		this.money = 0;
-		this.inventory = {};
+		this.inventory = {
+			[GameItem.Money]: 40,        // Starting money
+			[GameItem.Crop]: 0,
+			[GameItem.Mine]: 0,
+			[GameItem.Egg]: 0,
+			[GameItem.BarbedWire]: 0,
+			[GameItem.Sandbag]: 0,
+			[GameItem.MachineGun]: 0,
+		};
 		this.emuCount = STARTING_EMU_COUNT;
-		this.emuEggs = 0;
-		this.save(); 
+		this.save();
 	}
 }

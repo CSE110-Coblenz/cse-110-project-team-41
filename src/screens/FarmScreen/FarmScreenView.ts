@@ -31,26 +31,32 @@ const MINE_SIZE = 42;
  */
 export class FarmScreenView implements View {
 	private group: Konva.Group;
-	private menuGroup: Konva.Group;
 	private hudGroup: Konva.Group;
-
+	private hudBanner: Konva.Rect;
+	private player: Konva.Rect | null = null;
 	private scoreText: Konva.Text;
 	private cropText: Konva.Text;
 	private mineText: Konva.Text;
+	private menuOverlay: Konva.Group;
 	private minesLayer: Konva.Group;
-	private hudBanner: Konva.Rect;
+	private defensesLayer: Konva.Group;
 	private mines: Konva.Image[] = [];
 	private menuButtonHandler: (() => void) | null = null;
+	private onDefensePlaceClick: ((x: number, y: number) => void) | null = null;
 	private menuSaveHandler: (() => void) | null = null;
 	private menuBackHandler: (() => void) | null = null;
 	private registerEmu: ((emu: FarmEmuController) => void) | null = null;
-	private removeEmus: (() => void )| null = null;
+	private removeEmus: (() => void) | null = null;
+	private timerText: Konva.Text;
+	private roundText: Konva.Text;
 	private mineInstructionText: Konva.Text;
 	private mouseX: number = 0;
 	private mouseY: number = 0;
+	private placementHintDefault = "Press M to place a mine. Select a defense and press T to place it.";
 
 	constructor(
 		handleKeydown: (event: KeyboardEvent) => void,
+		handleKeyup: (event: KeyboardEvent) => void,
 		handleStartDay: () => void,
 		handleEndGame: () => void,
 		registerEmu: (emu: FarmEmuController) => void,
@@ -64,8 +70,24 @@ export class FarmScreenView implements View {
 			const keyboardEvent = event as KeyboardEvent;
 			handleKeydown(keyboardEvent);
 		});
+		window.addEventListener("keyup", (event) => {
+			const keyboardEvent = event as KeyboardEvent;
+			handleKeyup(keyboardEvent);
+		});
 
 		this.group = new Konva.Group({ visible: false });
+
+		// Background
+		const bg = new Konva.Rect({
+			x: 0,
+			y: 0,
+			width: STAGE_WIDTH,
+			height: STAGE_HEIGHT,
+			fill: "#009900", // Sky blue
+		});
+		this.group.add(bg);
+
+		// Track mouse position for mine placement
 		this.group.on("mousemove", (e) => {
 			const stage = e.target.getStage();
 			if (stage) {
@@ -77,33 +99,47 @@ export class FarmScreenView implements View {
 			}
 		});
 
-		/**
-		 * Create main components of scene: Background, Planters, Mines
-		 */
-		const bg = new Konva.Rect({
+		this.player = new Konva.Rect({
+			x: STAGE_WIDTH / 2 - 15,
+			y: STAGE_HEIGHT / 2,
+			width: 30,
+			height: 30,
+			fill: "#AA0000",
+		});
+		this.group.add(this.player);
+		this.minesLayer = new Konva.Group({ listening: false });
+		this.group.add(this.minesLayer);
+
+		this.defensesLayer = new Konva.Group({ listening: false }); // Disabled by default, enabled during planning phase
+		
+		// Add a transparent rect to capture clicks anywhere on the stage for defense placement
+		const defenseClickCatcher = new Konva.Rect({
 			x: 0,
 			y: 0,
 			width: STAGE_WIDTH,
 			height: STAGE_HEIGHT,
-			fill: "#009900",
+			fill: "transparent",
 		});
-		this.group.add(bg);
+		this.defensesLayer.add(defenseClickCatcher);
+		
+		this.group.add(this.defensesLayer);
 
-		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
-			for (let y = 200; y < (STAGE_HEIGHT); y += (STAGE_HEIGHT - 200) / 4) {
-				const planter = new FarmPlanterController(this.group, x, y);
-				registerPlanter(planter);
+		// Add click handler for defense placement during planning phase
+		this.defensesLayer.on("click", (e) => {
+			if (this.onDefensePlaceClick) {
+				const pos = e.target.getStage()?.getPointerPosition();
+				if (pos) {
+					this.onDefensePlaceClick(pos.x, pos.y);
+				}
 			}
-		}
-
-		this.minesLayer = new Konva.Group({ listening: false });
-		this.group.add(this.minesLayer);
+		});
 
 		/**
-		 * Create primary visual HUD: Status indicators and buttons
+		 * Create improved HUD with dark banner at top
 		 */
-		this.hudGroup = new Konva.Group();
-	
+		this.hudGroup = new Konva.Group({ listening: true });
+		
+		// Dark banner background
 		this.hudBanner = new Konva.Rect({
 			x: 0,
 			y: 0,
@@ -113,6 +149,7 @@ export class FarmScreenView implements View {
 		});
 		this.hudGroup.add(this.hudBanner);
 
+		// Score display (left side, stacked)
 		this.scoreText = new Konva.Text({
 			x: 10,
 			y: 10,
@@ -146,21 +183,17 @@ export class FarmScreenView implements View {
 		this.mineInstructionText = new Konva.Text({
 			x: 10,
 			y: 60,
-			text: "Press M to place mine at mouse cursor",
+			text: this.placementHintDefault,
 			fontSize: 12,
 			fontFamily: "Arial",
-			fill: "#666666",
+			fill: "#cccccc",
 		});
 		this.hudGroup.add(this.mineInstructionText);
 
-		const pauseGroup = new Konva.Group();
-		const pauseButton = new Konva.Image({
-			x: STAGE_WIDTH - 175,
-			y: 25,
-			width: 30,
-			height: 30,
-			image: pauseImage,
-		});
+		// Three buttons on right side (exact layout from market-options)
+		
+		// 1. Pause button (grey)
+		const pauseGroup = new Konva.Group({ cursor: "pointer", listening: true });
 		const pauseBackground = new Konva.Rect({
 			x: STAGE_WIDTH - 180,
 			y: 20,
@@ -168,20 +201,25 @@ export class FarmScreenView implements View {
 			height: 40,
 			fill: "grey",
 			cornerRadius: 8,
-		})
-		pauseButton.on("mouseup", () => this.menuButtonHandler!())
+			listening: true,
+		});
+		const pauseButton = new Konva.Image({
+			x: STAGE_WIDTH - 175,
+			y: 25,
+			width: 30,
+			height: 30,
+			image: pauseImage,
+			listening: true,
+		});
+		// Attach event to the GROUP so background doesn't block clicks
+		pauseGroup.on("mouseup", () => this.menuButtonHandler?.());
+		pauseGroup.on("click", () => this.menuButtonHandler?.());
 		pauseGroup.add(pauseBackground);
 		pauseGroup.add(pauseButton);
 		this.hudGroup.add(pauseGroup);
 
-		const startDayGroup = new Konva.Group();
-		const startDayButton = new Konva.Image({
-			x: STAGE_WIDTH - 115,
-			y: 25,
-			width: 30,
-			height: 30,
-			image: chevronImage,
-		});
+		// 2. Start Day button (green)
+		const startDayGroup = new Konva.Group({ cursor: "pointer", listening: true });
 		const startDayBackground = new Konva.Rect({
 			x: STAGE_WIDTH - 120,
 			y: 20,
@@ -189,20 +227,25 @@ export class FarmScreenView implements View {
 			height: 40,
 			fill: "green",
 			cornerRadius: 8,
-		})
-		startDayButton.on("mouseup", handleStartDay)
+			listening: true,
+		});
+		const startDayButton = new Konva.Image({
+			x: STAGE_WIDTH - 115,
+			y: 25,
+			width: 30,
+			height: 30,
+			image: chevronImage,
+			listening: true,
+		});
+		// Attach event to the GROUP so background doesn't block clicks
+		startDayGroup.on("mouseup", handleStartDay);
+		startDayGroup.on("click", handleStartDay);
 		startDayGroup.add(startDayBackground);
 		startDayGroup.add(startDayButton);
 		this.hudGroup.add(startDayGroup);
 
-		const endGameGroup = new Konva.Group();
-		const endGameButton = new Konva.Image({
-			x: STAGE_WIDTH - 55,
-			y: 25,
-			width: 30,
-			height: 30,
-			image: flagImage,
-		});
+		// 3. End Game button (red) - RIGHTMOST button
+		const endGameGroup = new Konva.Group({ cursor: "pointer", listening: true });
 		const endGameBackground = new Konva.Rect({
 			x: STAGE_WIDTH - 60,
 			y: 20,
@@ -210,18 +253,48 @@ export class FarmScreenView implements View {
 			height: 40,
 			fill: "red",
 			cornerRadius: 8,
-		})
-		endGameButton.on("mouseup", handleEndGame)
+			listening: true,
+		});
+		const endGameButton = new Konva.Image({
+			x: STAGE_WIDTH - 55,
+			y: 25,
+			width: 30,
+			height: 30,
+			image: flagImage,
+			listening: true,
+		});
+		// Attach event to the GROUP so background doesn't block clicks
+		endGameGroup.on("mouseup", handleEndGame);
+		endGameGroup.on("click", handleEndGame);
 		endGameGroup.add(endGameBackground);
 		endGameGroup.add(endGameButton);
 		this.hudGroup.add(endGameGroup);
-		
+
 		this.group.add(this.hudGroup);
 
-		/**
-		 * Create secondary hidden hud for main menu
-		 */
-		this.menuGroup = new Konva.Group({ visible: false });
+		// Timer display (in HUD)
+		this.timerText = new Konva.Text({
+			x: STAGE_WIDTH / 2 - 50,
+			y: 30,
+			text: "Time: 60",
+			fontSize: 16,
+			fontFamily: "Arial",
+			fill: "white",
+		});
+		this.hudGroup.add(this.timerText);
+
+		//Round display (now shows day, in HUD)
+		this.roundText = new Konva.Text({
+			x: STAGE_WIDTH / 2 - 150,
+			y: 30,
+			text: "Day: 1",
+			fontSize: 16,
+			fontFamily: "Arial",
+			fill: "white",
+		});
+		this.hudGroup.add(this.roundText);
+
+		this.menuOverlay = new Konva.Group({ visible: false });
 
 		const overlayBackground = new Konva.Rect({
 			x: 0,
@@ -275,7 +348,7 @@ export class FarmScreenView implements View {
 		});
 
 		const saveText = new Konva.Text({
-			text: "Save & Main Menu",
+			text: "Go to Main Menu",
 			fontSize: 24,
 			fontFamily: "Arial",
 			fill: "white",
@@ -295,12 +368,14 @@ export class FarmScreenView implements View {
 			y: panelY + 170,
 			cursor: "pointer",
 		});
+
 		const backRect = new Konva.Rect({
 			width: panelWidth - 80,
 			height: 56,
 			fill: "#c62828",
 			cornerRadius: 10,
 		});
+
 		const backText = new Konva.Text({
 			text: "Back to Game",
 			fontSize: 24,
@@ -310,20 +385,31 @@ export class FarmScreenView implements View {
 			y: 14,
 			align: "center",
 		});
+
 		backButton.add(backRect);
 		backButton.add(backText);
 		backButton.on("mouseup", () => {
 			this.menuBackHandler?.();
 		});
 
-		this.menuGroup.add(overlayBackground);
-		this.menuGroup.add(overlayPanel);
-		this.menuGroup.add(overlayTitle);
-		this.menuGroup.add(saveButton);
-		this.menuGroup.add(backButton);
+		this.menuOverlay.add(overlayBackground);
+		this.menuOverlay.add(overlayPanel);
+		this.menuOverlay.add(overlayTitle);
+		this.menuOverlay.add(saveButton);
+		this.menuOverlay.add(backButton);
 
-		this.group.add(this.menuGroup);
+		// Planters
+		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
+			for (let y = 200; y < (STAGE_HEIGHT); y += (STAGE_HEIGHT - 200) / 4) {
+				const planter = new FarmPlanterController(this.group, x, y);
+				registerPlanter(planter);
+			}
+		}
+
+		// Add menu overlay last so it appears on top of everything
+		this.group.add(this.menuOverlay);
 	}
+
 	spawnEmus(n: number): void {
 		if (!this.registerEmu) return;
 
@@ -364,18 +450,18 @@ export class FarmScreenView implements View {
 		this.menuButtonHandler = handler;
 	}
 
-	setMenuOptionHandlers(onSave: () => void, onBack: () => void): void {
-		this.menuSaveHandler = onSave;
+	setMenuOptionHandlers(onExit: () => void, onBack: () => void): void {
+		this.menuSaveHandler = onExit;
 		this.menuBackHandler = onBack;
 	}
 
 	showMenuOverlay(): void {
-		this.menuGroup.visible(true);
+		this.menuOverlay.visible(true);
 		this.group.getLayer()?.draw();
 	}
 
 	hideMenuOverlay(): void {
-		this.menuGroup.visible(false);
+		this.menuOverlay.visible(false);
 		this.group.getLayer()?.draw();
 	}
 
@@ -411,11 +497,86 @@ export class FarmScreenView implements View {
 	}
 
 	/**
+	 * Update timer display
+	 */
+	updateTimer(timeRemaining: number): void {
+		this.timerText.text(`Time: ${timeRemaining}`);
+		this.group.getLayer()?.draw();
+	}
+
+	/**
+	 * Update round display (now shows day)
+	 */
+	updateRound(day: number): void {
+		this.roundText.text(`Day: ${day}`);
+		this.group.getLayer()?.draw();
+	}
+
+	/**
+	 * Move the player a certain distance in a cardinal vector
+	 *
+	 * @param dx
+	 * @param dy
+	 */
+	movePlayerDelta(dx: number, dy: number): void {
+		if (!this.player) return;
+		this.player.x(this.player.x() + dx);
+		this.player.y(this.player.y() + dy);
+	}
+
+	setDefensePlaceClickHandler(handler: (x: number, y: number) => void): void {
+		this.onDefensePlaceClick = handler;
+	}
+
+	setPlanningPhaseMode(enabled: boolean): void {
+		// Enable/disable defense placement clicks
+		this.defensesLayer.listening(enabled);
+	}
+
+	addDefense(defenseGroup: Konva.Group): void {
+		this.defensesLayer.add(defenseGroup);
+		this.group.getLayer()?.draw();
+	}
+
+	clearDefenses(): void {
+		this.defensesLayer.destroyChildren();
+		this.group.getLayer()?.draw();
+	}
+
+	getDefensesLayer(): Konva.Group {
+		return this.defensesLayer;
+	}
+
+	/**
 	 * Show the screen
 	 */
 	show(): void {
 		this.group.visible(true);
 		this.group.getLayer()?.draw();
+	}
+
+	setPlacementHint(text?: string): void {
+		this.mineInstructionText.text(text ?? this.placementHintDefault);
+		this.group.getLayer()?.draw();
+	}
+
+	setPlacementCursor(enabled: boolean): void {
+		const stage = this.group.getStage();
+		if (stage) {
+			stage.container().style.cursor = enabled ? "pointer" : "default";
+		}
+	}
+
+	getMousePosition(): { x: number; y: number } | null {
+		const stage = this.group.getStage();
+		if (!stage) {
+			return null;
+		}
+		const pointer = stage.getPointerPosition();
+		if (!pointer) {
+			return null;
+		}
+		return { x: pointer.x, y: pointer.y };
 	}
 
 	/**

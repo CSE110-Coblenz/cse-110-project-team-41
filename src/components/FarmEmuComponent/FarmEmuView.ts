@@ -27,13 +27,12 @@ export class FarmEmuView {
 			y: startY,
 			width: 36,
 			height: 36,
+			image: sprite,
 			listening: false,
 			image: dummy,
 		});
 
-		if (sprite.complete) {
-			this.emu.image(sprite);
-		} else {
+		if (!sprite.complete) {
 			sprite.onload = () => {
 				this.emu?.image(sprite);
 				this.emu?.getLayer()?.batchDraw();

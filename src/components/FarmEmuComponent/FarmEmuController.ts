@@ -1,4 +1,3 @@
-import { FarmEmuModel } from "./FarmEmuModel.ts";
 import { FarmEmuView } from "./FarmEmuView.ts";
 import {EMU_SPEED, EMU_WALK_RANDOMIZATION} from "../../constants.ts";
 import Konva from "konva";
@@ -7,7 +6,6 @@ import Konva from "konva";
  * GameScreenController - Coordinates game logic between Model and View
  */
 export class FarmEmuController {
-	private model: FarmEmuModel;
 	private view: FarmEmuView;
 	private lastTickTime: number | null = null;
 
@@ -18,7 +16,6 @@ export class FarmEmuController {
 	private targetY = 0;
 
 	constructor(group: Konva.Group, startX: number, startY: number) {
-		this.model = new FarmEmuModel();
 		this.view = new FarmEmuView(group, startX, startY);
 
 		requestAnimationFrame(this.gameLoop);
