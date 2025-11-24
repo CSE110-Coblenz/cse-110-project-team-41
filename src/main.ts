@@ -6,6 +6,7 @@ import { HuntingScreenController } from "./screens/HuntingScreen/HuntingScreenCo
 import { HuntingIntroScreenController } from "./screens/HuntingIntroScreen/HuntingIntroScreenController.ts";
 import { HuntingEndScreenController } from "./screens/HuntingEndScreen/HuntingEndScreenController.ts";
 import { GameOverScreenController } from "./screens/GameOverScreen/GameOverScreenController.ts";
+import { GameIntroController } from "./screens/GameIntroScreen/GameIntroScreenController.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { GameStatusController } from "./controllers/GameStatusController.ts";
 import { MorningEventsScreenController } from "./screens/MorningEventsScreen/MorningEventsScreenController.ts";
@@ -26,6 +27,7 @@ class App implements ScreenSwitcher {
 	private resultsController: GameOverScreenController;
 	private morningController: MorningEventsScreenController;
 	private raidController: RaidController;
+	private introController: GameIntroController;
 
 	constructor(container: string) {
 		this.stage = new Konva.Stage({
@@ -51,6 +53,7 @@ class App implements ScreenSwitcher {
 			this,
 			this.gameStatusController
 		);
+		this.introController = new GameIntroController(this);
 
 		this.layer.add(this.menuController.getView().getGroup());
 		this.layer.add(this.farmController.getView().getGroup());
@@ -64,6 +67,7 @@ class App implements ScreenSwitcher {
 		this.layer.add(this.resultsController.getView().getGroup());
 		this.layer.add(this.morningController.getView().getGroup());
 		this.layer.add(this.raidController.getView().getGroup());
+		this.layer.add(this.introController.getView().getGroup());
 
 		this.layer.draw();
 
@@ -81,10 +85,15 @@ class App implements ScreenSwitcher {
 		this.huntingEndController.hide();
 		this.morningController.hide();
 		this.raidController.hide();
+		this.introController.hide();
 
 		switch (screen.type) {
 			case "main_menu":
 				this.menuController.show();
+				break;
+
+			case "game_intro": 
+				this.introController.show();
 				break;
 
 			case "farm":
