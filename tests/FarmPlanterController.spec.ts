@@ -14,6 +14,10 @@ class FakePlanterView {
 		this.handler = cb;
 	}
 
+	setOnHover(_cb: (isEmpty: boolean) => void): void {
+		// no-op - required by controller
+	}
+
 	setStage(stage: number): void {
 		this.stage = stage;
 	}
@@ -43,18 +47,18 @@ vi.mock("../src/components/FarmPlanterComponent/FarmPlanterView.ts", () => ({
 }));
 
 describe("FarmPlanterController", () => {
-	it("invokes harvest handler only when crop is fully grown", () => {
+	it("starts empty and can be planted", () => {
 		const controller = new FarmPlanterController(null as unknown as Konva.Group, 10, 10);
-		const onHarvest = vi.fn();
-		controller.setOnHarvest(onHarvest);
+		expect(controller.isEmpty()).toBe(true);
+		expect(controller.getStage()).toBe(-1);
+	});
 
+	it("only advances planted crops, not empty slots", () => {
+		const controller = new FarmPlanterController(null as unknown as Konva.Group, 10, 10);
+		expect(controller.isEmpty()).toBe(true);
 		controller.advanceDay();
-		controller.advanceDay();
-
-		latestView?.triggerClick();
-
-		expect(onHarvest).toHaveBeenCalledTimes(1);
-		expect(controller.getStage()).toBe(0);
+		expect(controller.isEmpty()).toBe(true);
+		expect(controller.getStage()).toBe(-1);
 	});
 });
 

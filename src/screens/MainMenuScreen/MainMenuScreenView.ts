@@ -34,6 +34,7 @@ export class MainMenuScreenView implements View {
 			y: -20,
 			width: STAGE_WIDTH + 40,
 			height: STAGE_HEIGHT + 40,
+			image: bgImage,
 			listening: false,
 		});
 		if (bgImage.complete) {

@@ -3,6 +3,7 @@ import type { ScreenSwitcher } from "../src/types.ts";
 import { GameStatusController } from "../src/controllers/GameStatusController.ts";
 import type { AudioManager } from "../src/services/AudioManager.ts";
 import type { View } from "../src/types.ts";
+import { GameItem } from "../src/constants.ts";
 
 class FakeGroup {
 	private visibleState = false;
@@ -30,6 +31,10 @@ class FakeView implements View {
 	updateInventory = vi.fn();
 	setInfoText = vi.fn();
 	clearQuiz = vi.fn();
+	hideQuizPopup = vi.fn();
+	showShopPopup = vi.fn();
+	hideShopPopup = vi.fn();
+	setDailyQuizButtonVisible = vi.fn();
 
 	show(): void {
 		this.group.visible(true);
@@ -93,18 +98,21 @@ const createController = () => {
 describe("MorningEventsScreenController", () => {
 	it("buys crops when affordable", () => {
 		const { controller, status } = createController();
+		// Controller now starts with $40
 		status.addMoney(20);
+		expect(status.getMoney()).toBe(60);
 		(controller as unknown as { handleBuy(): void }).handleBuy();
-		expect(status.getMoney()).toBe(10);
-		expect(status.getItemCount("crop")).toBe(1);
+		expect(status.getMoney()).toBe(50);
+		expect(status.getItemCount(GameItem.Crop)).toBe(1);
 	});
 
 	it("sells crops when available", () => {
 		const { controller, status } = createController();
-		status.addToInventory("crop", 2);
+		// Controller now starts with $40
+		status.addToInventory(GameItem.Crop, 2);
 		(controller as unknown as { handleSell(): void }).handleSell();
-		expect(status.getItemCount("crop")).toBe(1);
-		expect(status.getMoney()).toBe(5);
+		expect(status.getItemCount(GameItem.Crop)).toBe(1);
+		expect(status.getMoney()).toBe(45);
 	});
 
 	it("calls overlay close callback when continuing from overlay", () => {

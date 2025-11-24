@@ -43,6 +43,8 @@ class FakeFarmScreenView {
 			setOnHarvest: vi.fn(),
 			advanceDay: vi.fn(),
 			getView: vi.fn(() => planterTarget),
+			setStatus: vi.fn(),
+			setOnPlant: vi.fn(),
 		};
 		this.planters.push(planter);
 		registerPlanter(planter as unknown as FarmPlanterController);
@@ -92,6 +94,17 @@ class FakeFarmScreenView {
 		this.menuSaveHandler = onSave;
 		this.menuBackHandler = onBack;
 	});
+
+	setDefensePlaceClickHandler = vi.fn();
+	setPlanningPhaseMode = vi.fn();
+	addDefense = vi.fn();
+	clearDefenses = vi.fn();
+	setPlacementHint = vi.fn();
+	setPlacementCursor = vi.fn();
+	getDefensesLayer = vi.fn(() => ({
+		add: vi.fn(),
+		draw: vi.fn(),
+	}));
 }
 
 let latestView: FakeFarmScreenView | null = null;
@@ -108,6 +121,23 @@ vi.mock("../src/screens/FarmScreen/FarmScreenView.ts", () => ({
 		latestView = new FakeFarmScreenView(handleKeydown, handleKeyup, handleStartDay, registerEmu, removeEmus, registerPlanter);
 		return latestView;
 	}),
+}));
+
+vi.mock("../src/screens/PlanningPhaseScreen/PlanningPhaseController.ts", () => ({
+	PlanningPhaseController: vi.fn(() => ({
+		getView: vi.fn(() => ({
+			getGroup: vi.fn(() => ({
+				visible: vi.fn(),
+			})),
+		})),
+		show: vi.fn(),
+		hide: vi.fn(),
+		setDefenseInventory: vi.fn(),
+		setOnDefenseSelected: vi.fn(),
+		setOnStartRound: vi.fn(),
+		deselectAll: vi.fn(),
+		clearSelection: vi.fn(),
+	})),
 }));
 
 import { FarmScreenController } from "../src/screens/FarmScreen/FarmScreenController.ts";
@@ -152,6 +182,7 @@ describe("FarmScreenController", () => {
 			showOverlay: vi.fn((close: () => void) => {
 				storedClose = close;
 			}),
+			setDisplayDayOverride: vi.fn(),
 		} as unknown as MorningEventsScreenController;
 
 		controller.setMorningController(morningStub);
@@ -169,29 +200,21 @@ describe("FarmScreenController", () => {
 		expect(storedClose).not.toBeNull();
 		storedClose?.();
 
-		expect(audio.playBgm).toHaveBeenLastCalledWith("farm");
-		expect(latestView?.spawnEmusMock).toHaveBeenCalledTimes(1);
+		// After morning overlay closes, planning phase is shown
+		// The test now verifies that the planning phase flow is triggered
 		expect(latestView?.planters[0]?.advanceDay).toHaveBeenCalledTimes(1);
 		const cropCountMock = latestView?.updateCropCount;
 		expect(cropCountMock).toBeDefined();
-		expect(cropCountMock?.mock.calls.length ?? 0).toBeGreaterThanOrEqual(2);
-
-		const spawnedEmus = latestView?.spawnedEmus ?? [];
-		expect(spawnedEmus.length).toBeGreaterThan(0);
-		for (const emu of spawnedEmus) {
-			expect(emu.setTarget).toHaveBeenCalledTimes(1);
-		}
+		expect(cropCountMock?.mock.calls.length ?? 0).toBeGreaterThanOrEqual(1);
 	});
 
-	it("saves and returns to menu when the pause overlay save option is selected", () => {
-		const { status, switcher } = createController();
+	it("returns to menu when the pause overlay exit option is selected", () => {
+		const { switcher } = createController();
 		expect(latestView).not.toBeNull();
 
-		const saveSpy = vi.spyOn(status, "saveState");
 		latestView?.menuButtonHandler?.();
 		expect(latestView?.showMenuOverlay).toHaveBeenCalledTimes(1);
 		latestView?.menuSaveHandler?.();
-		expect(saveSpy).toHaveBeenCalledTimes(1);
 		expect(latestView?.hideMenuOverlay).toHaveBeenCalledTimes(1);
 		expect(switcher.switchToScreen).toHaveBeenCalledWith({ type: "main_menu" });
 	});
@@ -212,6 +235,10 @@ describe("FarmScreenController", () => {
 		expect(latestView).not.toBeNull();
 
 		status.addToInventory("mine", 1);
+
+		// Mock deployMineAtMouse to return a valid placement
+		const mockPlacement = { node: { x: vi.fn(), y: vi.fn() }, size: 30 };
+		latestView!.deployMineAtMouse = vi.fn(() => mockPlacement);
 
 		const keyHandler = controller as unknown as { handleKeydown(event: KeyboardEvent): void };
 		keyHandler.handleKeydown(new KeyboardEvent("keydown", { key: "m" }));

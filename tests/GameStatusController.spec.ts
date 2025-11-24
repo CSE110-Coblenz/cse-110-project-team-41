@@ -6,14 +6,17 @@ describe("GameStatusController", () => {
 
 	it("adds and spends money with floor at zero", () => {
 		const status = createStatus();
+		// Controller now starts with $40
+		expect(status.getMoney()).toBe(40);
+		
 		status.addMoney(50);
-		expect(status.getMoney()).toBe(50);
+		expect(status.getMoney()).toBe(90);
 
 		expect(status.spend(30)).toBe(true);
-		expect(status.getMoney()).toBe(20);
+		expect(status.getMoney()).toBe(60);
 
-		expect(status.spend(25)).toBe(false);
-		expect(status.getMoney()).toBe(20);
+		expect(status.spend(65)).toBe(false);
+		expect(status.getMoney()).toBe(60);
 
 		status.addMoney(-100);
 		expect(status.getMoney()).toBe(0);
