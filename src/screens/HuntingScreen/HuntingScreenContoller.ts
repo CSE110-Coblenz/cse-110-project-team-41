@@ -187,9 +187,6 @@ export class HuntingScreenController extends ScreenController {
     if (this.running) {
       requestAnimationFrame(this.gameLoop);
     }
-    if (this.running) {
-      requestAnimationFrame(this.gameLoop);
-    }
   };
 
   endGame(reason: "ammo" | "time" | "victory" = "victory") {
