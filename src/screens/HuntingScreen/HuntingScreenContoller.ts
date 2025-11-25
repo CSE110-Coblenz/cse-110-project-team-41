@@ -180,11 +180,15 @@ export class HuntingScreenController extends ScreenController {
 
     this.view.batchDraw();
 
-    requestAnimationFrame(this.gameLoop);
+    if (this.running) {
+      requestAnimationFrame(this.gameLoop);
+    }
   };
 
   endGame(reason: "ammo" | "time" | "victory" = "victory") {
     this.running = false;
+    this.keys.clear();
+    this.model.stopTimer();
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
     this.screenSwitcher.switchToScreen({

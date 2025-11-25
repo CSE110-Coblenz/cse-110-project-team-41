@@ -51,6 +51,10 @@ export class HuntingScreenModel {
     this.timeRemaining = Math.max(0, 60 - elapsed);
     return this.timeRemaining;
   }
+  
+  stopTimer(): void {
+    this.startTime = 0;
+  }
 
   getTimeRemaining(): number {
     return this.timeRemaining;
