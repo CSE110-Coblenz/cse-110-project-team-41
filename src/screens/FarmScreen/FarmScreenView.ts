@@ -55,8 +55,8 @@ export class FarmScreenView implements View {
 	private eggSkipHandler: (() => void) | null = null;
 	private registerEmu: ((emu: FarmEmuController) => void) | null = null;
 	private removeEmus: (() => void )| null = null;
-	//private timerText: Konva.Text; //Need to add timer implementation and timer back
-	//private roundText: Konva.Text; //Need to display round again
+	private timerText: Konva.Text; //Need to add timer implementation and timer back
+	private roundText: Konva.Text; //Need to display round again
 	private mineInstructionText: Konva.Text;
 	private mouseX: number = 0;
 	private mouseY: number = 0;
@@ -359,6 +359,28 @@ export class FarmScreenView implements View {
 				registerPlanter(planter);
 			}
 		}
+
+		//Timer display:
+		this.timerText = new Konva.Text({
+			x: STAGE_WIDTH - 380,
+			y: 20,
+			text: "Time: 60",
+			fontSize: 32,
+			fontFamily: "Arial",
+			fill: "white",
+		});
+		this.group.add(this.timerText);
+
+		//Round display:
+		this.roundText = new Konva.Text({
+			x: STAGE_WIDTH - 540,
+			y: 20,
+			text: "Day: 1",
+			fontSize: 32,
+			fontFamily: "Arial",
+			fill: "white",
+		});
+		this.group.add(this.roundText);
 	}
 
 	//For adding overlays to access minigames:
@@ -499,11 +521,6 @@ export class FarmScreenView implements View {
 		this.group.getLayer()?.draw();
 	}
 
-	/**
-	 * TODO: add updateTimer and updateRound methods
-	 * 
-	 */
-
 	updateCropCount(count: number): void {
 		this.cropText.text(`Crops: ${count}`);
 		this.group.getLayer()?.draw();
@@ -600,6 +617,27 @@ export class FarmScreenView implements View {
 		this.mines.forEach((mine) => mine.destroy());
 		this.mines = [];
 		this.minesLayer.destroyChildren();
+		this.group.getLayer()?.draw();
+	}
+
+	/**
+	 * TODO: add updateTimer and updateRound methods
+	 * 
+	 */
+
+	/**
+	 * Update timer display
+	 */
+	updateTimer(timeRemaining: number): void{
+		this.timerText.text(`Time: ${timeRemaining}`);
+		this.group.getLayer()?.draw();
+	}
+
+	/**
+	 * Update round display (a.k.a the day)
+	 */
+	updateRound(day: number): void {
+		this.roundText.text(`Day: ${day}`);
 		this.group.getLayer()?.draw();
 	}
 

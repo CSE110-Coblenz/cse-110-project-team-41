@@ -9,6 +9,7 @@ import { ScreenController } from "../../types.ts";
 import type { MorningEventsScreenController } from "../MorningEventsScreen/MorningEventsScreenController.ts";
 import { FarmScreenModel } from "./FarmScreenModel.ts";
 import { FarmScreenView } from "./FarmScreenView.ts";
+import { GAME_DURATION } from "../../constants.ts";
 
 /**
  * GameScreenController - Coordinates game logic between Model and View
@@ -16,6 +17,8 @@ import { FarmScreenView } from "./FarmScreenView.ts";
 export class FarmScreenController extends ScreenController {
 	private model: FarmScreenModel;
 	private view: FarmScreenView;
+	private gameTimer: number | null = null;
+	private timeRemaining: number = GAME_DURATION;
 
 	private status: GameStatusController;
 	private audio: AudioManager;
@@ -81,13 +84,14 @@ export class FarmScreenController extends ScreenController {
 	startGame(): void {
 		// Reset model state
 		this.model.reset();
+		this.timeRemaining = GAME_DURATION;
 
 		// Update view
 		this.view.updateScore(this.model.getScore());
 		this.view.hideMenuOverlay();
 		this.resetMines();
 		this.view.spawnEmus(this.model.getSpawn());
-		//this.view.updateTimer(this.timeRemaining); //updateTimer/ TIMER needs to be impmlemented
+		this.view.updateTimer(this.timeRemaining); //updateTimer/ TIMER needs to be impmlemented
 		this.updateCropDisplay();
 		this.view.show();
 	}
@@ -99,8 +103,13 @@ export class FarmScreenController extends ScreenController {
 		// Update view
 		this.view.updateScore(this.model.getScore());
 		this.updateCropDisplay();
+		this.timeRemaining = GAME_DURATION;
+		this.view.updateTimer(this.timeRemaining);
+		this.view.updateRound(this.status.getDay());
 		this.view.hideMenuOverlay();
 		this.view.show();
+
+		this.startTimer();
 	}
 
 	/**
@@ -121,10 +130,41 @@ export class FarmScreenController extends ScreenController {
 		this.endRound();
 	}
 
+	//Timer implementation:
+
+	/**
+	 * Start the countdown timer for the main game
+	 */
+	private startTimer(): void {
+		this.stopTimer();
+		const timerId = setInterval(() => {
+			if (this.timeRemaining <= 0){
+				this.endRound();
+				return;
+			}
+			this.timeRemaining = Math.max(0, this.timeRemaining - 1);
+			this.view.updateTimer(this.timeRemaining);
+			// if (this.timeRemaining <= 0){
+			// 	this.endRound();
+			// }
+		}, 1000) as unknown as number;
+		this.gameTimer = timerId;
+	}
+
+	/**
+	 * Stop the countdown timer for the main game
+	 */
+	private stopTimer(): void{
+		if (!this.gameTimer) {return;}
+		clearInterval(this.gameTimer);
+		this.gameTimer = null;
+	}
+
 	/**
 	 * End the game
 	 */
     private endRound(): void {
+		this.stopTimer();
         this.view.clearEmus();
         this.status.endDay();
         const newDay = this.status.getDay();
@@ -353,7 +393,8 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	/**
-	 * End the game
+	 * End the game (called when player's crops are taken out)
+	 * Should be called in game loop
 	 */
 	endGame(): void {
         this.view.clearEmus();
