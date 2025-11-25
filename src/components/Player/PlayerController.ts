@@ -68,7 +68,7 @@ export class PlayerController {
 
     if (isCurrentlyMoving && !wasMoving) {
       // Start sound: Player was NOT moving, but is now moving.
-      this.audioManager.startSfxLoop("run");
+      this.audioManager.startSfxLoop("run",1);
     } else if (!isCurrentlyMoving && wasMoving) {
       // Stop sound: Player WAS moving, but is now stopped (keys released or blocked).
       this.audioManager.stopSfxLoop();

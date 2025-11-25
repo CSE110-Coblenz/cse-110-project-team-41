@@ -1,5 +1,5 @@
 export type BgmKey = "menu" | "farm" | "morning" | "gameover";
-export type SfxKey = "squeeze" | "harvest" | "buy" | "sell" | "gameover"|"run"|"shoot";
+export type SfxKey = "squeeze" | "harvest" | "buy" | "sell" | "gameover"|"run"|"shoot"|"emu";
 
 /**
  * Centralized audio manager for background music and sound effects.
@@ -34,6 +34,7 @@ export class AudioManager {
         gameover: "/gameover.mp3",
         run: "/running.wav",
         shoot: "/shoot.mp3",
+        emu: "/emu.m4a",
     };
 
     constructor() {
@@ -91,14 +92,14 @@ export class AudioManager {
         this.currentBgmKey = null;
     }
 
-    playSfx(key: SfxKey): void {
+    playSfx(key: SfxKey, volumeMultiplier: number = 1): void {
         const path = this.sfxPaths[key];
         if (!path) return;
         const el = new Audio(path);
-        el.volume = this.sfxVolume;
+        el.volume = Math.min(this.sfxVolume * volumeMultiplier, 1);
         el.play().catch(() => { /* ignore */ });
     }
-    startSfxLoop(key: SfxKey): void {
+    startSfxLoop(key: SfxKey,volumeMultiplier: number = 1): void {
         if (this.runningSfxEl) {
             return; // Already playing
         }
@@ -108,7 +109,7 @@ export class AudioManager {
         
         const el = new Audio(path);
         el.loop = true;
-        
+        el.volume = Math.min(this.sfxVolume * volumeMultiplier, 1);
         el.play().catch(() => { });
         this.runningSfxEl = el;
     }
