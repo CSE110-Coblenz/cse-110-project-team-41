@@ -2,16 +2,19 @@ import { PlayerModel } from "./PlayerModel";
 import { PlayerView } from "./PlayerView";
 import type { ObstacleController } from "../Obstacle/ObstacleController";
 import { BulletController } from "../Bullet/BulletController";
+import {AudioManager} from "../../services/AudioManager";
 
 // PlayerController: Handles player input, movement, collision, and shooting
 export class PlayerController {
   model: PlayerModel;
   view: PlayerView;
+  private audioManager: AudioManager;
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number,audioManager: AudioManager) {
     // Initialize player model and view
     this.model = new PlayerModel(x, y);
     this.view = new PlayerView(this.model);
+    this.audioManager = audioManager;
   }
 
   // Update player position based on input keys and obstacles
@@ -19,6 +22,7 @@ export class PlayerController {
     const speed = this.model.speed;
     let dx = 0,
       dy = 0;
+    const wasMoving = this.model.isMoving; 
     this.model.isMoving = false;
 
     // Process movement keys
@@ -56,9 +60,18 @@ export class PlayerController {
     const nextBox = { x: nextX, y: nextY, w: 30, h: 30 };
     const obstacles = obstacleControllers.map(c => c.getModel());
     const blocked = obstacles.some((o) => o.collides(nextBox));
+    let isCurrentlyMoving = this.model.isMoving;
     if (!blocked) {
       this.model.x = nextX;
       this.model.y = nextY;
+    }
+
+    if (isCurrentlyMoving && !wasMoving) {
+      // Start sound: Player was NOT moving, but is now moving.
+      this.audioManager.startSfxLoop("run");
+    } else if (!isCurrentlyMoving && wasMoving) {
+      // Stop sound: Player WAS moving, but is now stopped (keys released or blocked).
+      this.audioManager.stopSfxLoop();
     }
 
     // Update view to match model
@@ -83,4 +96,8 @@ export class PlayerController {
   getPosition() {
     return { x: this.model.x, y: this.model.y };
   }
+  stopAllSounds() {
+    // If the game is ending, forcefully stop the running sound loop.
+    this.audioManager.stopSfxLoop(); 
+}
 }

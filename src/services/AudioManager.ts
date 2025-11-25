@@ -1,5 +1,5 @@
 export type BgmKey = "menu" | "farm" | "morning" | "gameover";
-export type SfxKey = "squeeze" | "harvest" | "buy" | "sell" | "gameover";
+export type SfxKey = "squeeze" | "harvest" | "buy" | "sell" | "gameover"|"run"|"shoot";
 
 /**
  * Centralized audio manager for background music and sound effects.
@@ -15,6 +15,7 @@ export class AudioManager {
 
     private bgmEl: HTMLAudioElement | null = null;
     private currentBgmKey: BgmKey | null = null;
+    private runningSfxEl: HTMLAudioElement | null = null;
 
     // Map scene keys to bgm paths. Replace with real assets when available.
     private bgmPaths: Partial<Record<BgmKey, string>> = {
@@ -31,13 +32,15 @@ export class AudioManager {
         buy: "/squeeze.mp3",
         sell: "/squeeze.mp3",
         gameover: "/gameover.mp3",
+        run: "/running.wav",
+        shoot: "/shoot.mp3",
     };
 
     constructor() {
         const sfx = Number(localStorage.getItem(AudioManager.SFX_VOLUME_KEY));
         const music = Number(localStorage.getItem(AudioManager.MUSIC_VOLUME_KEY));
-        this.sfxVolume = isNaN(sfx) ? 0.7 : Math.min(Math.max(sfx, 0), 1);
-        this.musicVolume = isNaN(music) ? 0.5 : Math.min(Math.max(music, 0), 1);
+        this.sfxVolume = isNaN(sfx) ? 0.7 : Math.min(Math.max(sfx, 0.1), 1);
+        this.musicVolume = isNaN(music) ? 0.5 : Math.min(Math.max(music, 0.1), 1);
     }
 
     setMusicVolume(v: number): void {
@@ -94,6 +97,27 @@ export class AudioManager {
         const el = new Audio(path);
         el.volume = this.sfxVolume;
         el.play().catch(() => { /* ignore */ });
+    }
+    startSfxLoop(key: SfxKey): void {
+        if (this.runningSfxEl) {
+            return; // Already playing
+        }
+        
+        const path = this.sfxPaths[key];
+        if (!path) return;
+        
+        const el = new Audio(path);
+        el.loop = true;
+        
+        el.play().catch(() => { });
+        this.runningSfxEl = el;
+    }
+
+    stopSfxLoop(): void {
+        if (this.runningSfxEl) {
+            try { this.runningSfxEl.pause(); } catch {}
+            this.runningSfxEl = null;
+        }
     }
 }
 
