@@ -2,13 +2,16 @@ import { EmuModel } from "./EmuModel";
 import { EmuView } from "./EmuView";
 import type { ObstacleController } from "../Obstacle/ObstacleController";
 import type { BulletController } from "../Bullet/BulletController";
+import {AudioManager} from "../../services/AudioManager";
 
 export class EmuController {
   model: EmuModel;
   view: EmuView;
+  private audioManager: AudioManager;
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, audioManager: AudioManager) {
     // Initialize model and view at position
+    this.audioManager = audioManager;
     this.model = new EmuModel(x, y);
     this.view = new EmuView(this.model);
   }
@@ -70,6 +73,14 @@ export class EmuController {
       if (distance < emuRadius + 5) {
         b.destroy();
         this.model.becomeHit();
+        
+        try {
+        console.log("Playing emu sound...");
+        this.audioManager.playSfx("emu",1);
+        console.log("Sound played successfully");
+      } catch (error) {
+        console.error("Error playing sound:", error);
+      }
 
         if (!this.model.active) {
           const node = this.view.getGroup();

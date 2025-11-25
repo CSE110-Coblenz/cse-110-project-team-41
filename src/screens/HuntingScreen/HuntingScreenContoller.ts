@@ -103,7 +103,7 @@ export class HuntingScreenController extends ScreenController {
     const emuCount = Math.floor(Math.random() * 11) + 10; // Random between 10 and 20
     for (let i = 0; i < emuCount; i++) {
       const emuPos = getSafeSpawnPosition(this.obstacleControllers, 24, 24, GAME_AREA_Y, GAME_AREA_HEIGHT);
-      const ec = new EmuController(emuPos.x, emuPos.y);
+      const ec = new EmuController(emuPos.x, emuPos.y, this.audioManager);
       this.emuControllers.push(ec);
       this.view.getGroup().add(ec.getGroup());
     }
@@ -119,7 +119,7 @@ export class HuntingScreenController extends ScreenController {
         this.bulletControllers.push(bullet);
         this.view.getGroup().add(bullet.getGroup());
         this.view.updateAmmo(this.model.getAmmo());
-        this.audioManager.playSfx("shoot");
+        this.audioManager.playSfx("shoot",0.3);
       }
     }
   }
