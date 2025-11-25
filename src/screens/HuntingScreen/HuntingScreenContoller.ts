@@ -9,12 +9,14 @@ import { EmuController } from "../../components/Emu/EmuController";
 import { BulletController } from "../../components/Bullet/BulletController";
 import { STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_HEIGHT, GAME_AREA_Y } from "../../constants";
 import { getSafeSpawnPosition } from "../../utils/getSafeSpawnPosition";
+import { AudioManager } from "../../services/AudioManager";
 
 export class HuntingScreenController extends ScreenController {
   private model: HuntingScreenModel;
   private view: HuntingScreenView;
   private screenSwitcher: ScreenSwitcher;
   private running = false;
+  private audioManager : AudioManager;
 
   // controllers & models
   private playerController!: PlayerController;
@@ -24,11 +26,12 @@ export class HuntingScreenController extends ScreenController {
 
   private keys: Set<string> = new Set();
 
-  constructor(screenSwitcher: ScreenSwitcher) {
+  constructor(screenSwitcher: ScreenSwitcher, audioManager: AudioManager) {
     super();
     this.screenSwitcher = screenSwitcher;
     this.model = new HuntingScreenModel();
     this.view = new HuntingScreenView();
+    this.audioManager = audioManager;
   }
 
   getView(): HuntingScreenView {
@@ -92,7 +95,7 @@ export class HuntingScreenController extends ScreenController {
     // spawn player safely (offset by HUD height)
     
     const playerPos = getSafeSpawnPosition(this.obstacleControllers, 30, 30, GAME_AREA_Y, GAME_AREA_HEIGHT);
-    this.playerController = new PlayerController(playerPos.x, playerPos.y);
+    this.playerController = new PlayerController(playerPos.x, playerPos.y, this.audioManager);
     this.view.getGroup().add(this.playerController.getGroup());
 
     // spawn emus safely (offset by HUD height)
@@ -116,6 +119,7 @@ export class HuntingScreenController extends ScreenController {
         this.bulletControllers.push(bullet);
         this.view.getGroup().add(bullet.getGroup());
         this.view.updateAmmo(this.model.getAmmo());
+        this.audioManager.playSfx("shoot");
       }
     }
   }
@@ -183,12 +187,18 @@ export class HuntingScreenController extends ScreenController {
     if (this.running) {
       requestAnimationFrame(this.gameLoop);
     }
+    if (this.running) {
+      requestAnimationFrame(this.gameLoop);
+    }
   };
 
   endGame(reason: "ammo" | "time" | "victory" = "victory") {
     this.running = false;
     this.keys.clear();
     this.model.stopTimer();
+    if (this.playerController) {
+      this.playerController.stopAllSounds();
+    }
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
     this.screenSwitcher.switchToScreen({
