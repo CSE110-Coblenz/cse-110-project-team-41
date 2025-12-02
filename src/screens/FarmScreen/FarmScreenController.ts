@@ -40,6 +40,7 @@ export class FarmScreenController extends ScreenController {
 	private audio: AudioManager;
 	private emus: FarmEmuController[] = [];
 	private emuTargets = new Map<FarmEmuController, FarmPlanterController | null>;
+	private numStillStanding: number = 0;
 	private planters: FarmPlanterController[] = [];
 	private morning: MorningEventsScreenController | null = null;
 	private planningPhase: PlanningPhaseController | null = null;
@@ -471,7 +472,7 @@ export class FarmScreenController extends ScreenController {
 		const candidates = this.getPlantersWithCrop();
 		if (!candidates.length) {
 			// No crops left – game is over!!!!:
-			// this.endGame();
+			this.endGame();
 			this.emuTargets.set(emu, null);
 			return;
 		}
@@ -554,6 +555,7 @@ export class FarmScreenController extends ScreenController {
 				if (cropDied) {
 					this.audio.playSfx("harvest");
 					this.updateCropDisplay();
+					this.numStillStanding--;
 					//console.log("\n CROP DIED TO EMU (FS_CONTROLLER)");
 					//Retarget all emus targeted on this crop to the next non-destroyed crop
 					for (const otherEmu of this.emus){
