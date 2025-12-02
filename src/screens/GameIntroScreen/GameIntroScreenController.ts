@@ -17,7 +17,7 @@ export class GameIntroController {
 
     // Do not render or setup input immediately in constructor, 
     // wait for show() to be called.
-    this.view.hide(); 
+    this.view.hide();
   }
 
   // 3. Implement show() and hide()
@@ -35,7 +35,7 @@ export class GameIntroController {
     }
     this.view.hide();
   }
-  
+
   // Method to return the view's group, used by App
   getView(): GameIntroView {
     return this.view;
@@ -45,7 +45,7 @@ export class GameIntroController {
     const text = this.model.getPage(this.currentPage);
     const isLastPage = this.currentPage === this.model.getPageCount() - 1;
     const totalPages = this.model.getPageCount();
-    
+
     this.view.renderPage(text, isLastPage, this.currentPage, totalPages);
   }
 
@@ -60,10 +60,10 @@ export class GameIntroController {
         this.completeIntro(); // Skip directly to the end
         return;
       }
-      
+
       if (e.code === "Space") {
         e.preventDefault(); // Prevent page scrolling
-        
+
         if (this.currentPage < this.model.getPageCount() - 1) {
           // Move to next page
           this.currentPage++;
