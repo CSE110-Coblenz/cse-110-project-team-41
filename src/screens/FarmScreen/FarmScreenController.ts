@@ -1,19 +1,19 @@
+import Konva from "konva";
+import type { Image as KonvaImage } from "konva/lib/shapes/Image";
+import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
+import { DefenseController } from "../../components/DefenseComponent/DefenseController.ts";
+import type { DefenseType } from "../../components/DefenseComponent/DefenseModel.ts";
 import { FarmEmuController } from "../../components/FarmEmuComponent/FarmEmuController.ts";
 import type { FarmPlanterController } from "../../components/FarmPlanterComponent/FarmPlanterController.ts";
-import { GAME_DURATION, ONE_OVER_ROOT_TWO, PLAYER_SPEED, GameItem } from "../../constants.ts";
+import { GAME_DURATION, GameItem } from "../../constants.ts";
 import { GameStatusController } from "../../controllers/GameStatusController.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { ScreenController } from "../../types.ts";
-import { FarmScreenModel } from "./FarmScreenModel.ts";
-import { FarmScreenView } from "./FarmScreenView.ts";
 import type { MorningEventsScreenController } from "../MorningEventsScreen/MorningEventsScreenController.ts";
 import { PlanningPhaseController } from "../PlanningPhaseScreen/PlanningPhaseController.ts";
-import { DefenseController } from "../../components/DefenseComponent/DefenseController.ts";
-import type { DefenseType } from "../../components/DefenseComponent/DefenseModel.ts";
-import type { Image as KonvaImage } from "konva/lib/shapes/Image";
-import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
-import Konva from "konva";
+import { FarmScreenModel } from "./FarmScreenModel.ts";
+import { FarmScreenView } from "./FarmScreenView.ts";
 
 // Helper: Map DefenseType to GameItem
 function defenseTypeToGameItem(type: DefenseType): GameItem {
@@ -50,8 +50,6 @@ export class FarmScreenController extends ScreenController {
 	private selectedDefenseType: DefenseType | null = null;
 	private readonly planningHint = "Select a defense, then press T to place it at the cursor.";
 
-	private playerDirectionX: number = 0;
-	private playerDirectionY: number = 0;
 	private activeMines: ActiveMine[] = [];
 
 	// private squeezeSound: HTMLAudioElement;
@@ -65,7 +63,6 @@ export class FarmScreenController extends ScreenController {
 		this.model = new FarmScreenModel();
 		this.view = new FarmScreenView(
 			(event: KeyboardEvent) => this.handleKeydown(event),
-			(event: KeyboardEvent) => this.handleKeyup(event),
 			() => this.handleEndDay(),
 			() => this.handleEndGame(),
 			(emu: FarmEmuController) => this.registerEmu(emu),
@@ -110,21 +107,11 @@ export class FarmScreenController extends ScreenController {
 		const deltaTime: number = (timestamp - this.lastTickTime) * 0.001;
 		this.lastTickTime = timestamp;
 
-		if (Math.abs(this.playerDirectionX) + Math.abs(this.playerDirectionY) == 2) {
-			this.view.movePlayerDelta(
-				this.playerDirectionX * PLAYER_SPEED * deltaTime * ONE_OVER_ROOT_TWO,
-				this.playerDirectionY * PLAYER_SPEED * deltaTime * ONE_OVER_ROOT_TWO
-			);
-		} else {
-			this.view.movePlayerDelta(
-				this.playerDirectionX * PLAYER_SPEED * deltaTime,
-				this.playerDirectionY * PLAYER_SPEED * deltaTime
-			);
-		}
-
 		this.checkMineCollisions();
 		this.checkEmuCropCollisions(deltaTime);
 		this.checkDefenseEmuInteractions(deltaTime);
+		this.assignTargetsToAllEmus();
+
 		if (this.lastTickTime == null){
 			this.lastTickTime = timestamp;
 		}
@@ -136,10 +123,7 @@ export class FarmScreenController extends ScreenController {
 	/**
 	 * Start the game
 	 */
-	startGame(): void {
-		// Reset game status (day, money, inventory, etc.)
-		this.status.reset();
-		
+	startGame(): void {		
 		// Reset model state
 		this.model.reset();
 		this.timeRemaining = GAME_DURATION;
@@ -341,30 +325,12 @@ export class FarmScreenController extends ScreenController {
     private handleKeydown(event: KeyboardEvent): void {
         const key = event.key;
         switch (key) {
-            case "w": this.playerDirectionY = -1; break;
-            case "s": this.playerDirectionY = 1; break;
-            case "d": this.playerDirectionX = 1; break;
-            case "a": this.playerDirectionX = -1; break;
             case "m": this.handleDeployMine(); break;
 			case "t": this.attemptDefensePlacementAtCursor(); break;
 			case "Escape": this.cancelDefensePlacement(); break;
         }
         event.preventDefault();
     }
-
-	/**
-	 * Handle player movement
-	 */
-	private handleKeyup(event: KeyboardEvent): void {
-		const key = event.key;
-		if (["w", "s"].includes(key)) {
-			this.playerDirectionY = 0;
-		}
-		if (["a", "d"].includes(key)) {
-			this.playerDirectionX = 0;
-		}
-		event.preventDefault();
-	}
 
 	/**
 	 * Start day
@@ -465,7 +431,7 @@ export class FarmScreenController extends ScreenController {
 	//For Emu crop interactions:
 
 	private getPlantersWithCrop(): FarmPlanterController[] {
-		return this.planters.filter(p => p.getHasCrop());
+		return this.planters.filter(p => !p.isEmpty());
 	}
 
 	private assignTargetToEmu(emu: FarmEmuController): void {
@@ -495,6 +461,10 @@ export class FarmScreenController extends ScreenController {
 		}
 
 		for (const emu of this.emus) {
+			if (emu.hasTarget()) {
+				return;
+			}
+
 			const planter = candidates[Math.floor(Math.random() * candidates.length)];
 			const target = planter.getView();
 			if (target) {
@@ -521,8 +491,7 @@ export class FarmScreenController extends ScreenController {
 			const emuHeight = emuShape.height();
 
 			for (const planter of this.planters) {
-				// Skip planters with no living crop
-				if (!planter.getHasCrop()) {
+				if (planter.isEmpty()) {
 					continue;
 				}
 
@@ -547,16 +516,15 @@ export class FarmScreenController extends ScreenController {
 				}
 
 				//Emu is “attacking” this crop
-				this.emuTargets.set(emu, planter);
 				const dps = emu.getDamage();
 				const damageThisFrame = dps * deltaTime;
+
 				const cropDied = planter.takeDamage(damageThisFrame);
 
 				if (cropDied) {
 					this.audio.playSfx("harvest");
 					this.updateCropDisplay();
 					this.numStillStanding--;
-					//console.log("\n CROP DIED TO EMU (FS_CONTROLLER)");
 					//Retarget all emus targeted on this crop to the next non-destroyed crop
 					for (const otherEmu of this.emus){
 						const target = this.emuTargets.get(otherEmu);
@@ -640,14 +608,7 @@ export class FarmScreenController extends ScreenController {
 		if (!this.planters.length) {
 			return;
 		}
-
-		for (const emu of this.emus) {
-			const planter = this.planters[Math.floor(Math.random() * this.planters.length)];
-			const target = planter?.getView();
-			if (target) {
-				emu.setTarget(target);
-			}
-		}
+		this.assignTargetsToAllEmus();
 	}
 
 	//For integration of minigames into the main game:

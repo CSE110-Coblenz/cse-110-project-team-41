@@ -70,10 +70,6 @@ export class FarmPlanterController {
 		return false;
 	}
 
-	getHasCrop(): boolean {
-		return this.model.stillStanding();
-	}
-
 	takeDamage(amount: number): boolean {
 		const died = this.model.decrimentHealth(amount);
 		this.view.setStage(this.model.getStage());
@@ -92,9 +88,10 @@ export class FarmPlanterController {
 		if (this.model.isEmpty()) {
 			if (this.status && this.status.getItemCount(GameItem.Crop) > 0) {
 				if (this.model.plant()) {
+					console.log("planted")
 					this.status.removeFromInventory(GameItem.Crop, 1);
 					this.view.setStage(this.model.getStage());
-					this.plantHandler?.();
+					this.plantHandler!();
 				}
 			}
 			return;

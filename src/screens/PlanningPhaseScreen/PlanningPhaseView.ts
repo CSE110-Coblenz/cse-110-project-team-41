@@ -256,7 +256,7 @@ export class PlanningPhaseView implements View {
 		const buttonWidth = 200;
 		const buttonHeight = 50;
 		const buttonX = (STAGE_WIDTH - buttonWidth) / 2;
-		const buttonY = STAGE_HEIGHT - 180;
+		const buttonY = STAGE_HEIGHT - 235;
 
 		const button = new Konva.Group({
 			x: buttonX,

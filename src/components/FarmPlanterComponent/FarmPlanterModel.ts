@@ -16,7 +16,7 @@ export class FarmPlanterModel {
 	}
 
 	plant(): boolean {
-		if (this.stage !== -1) {
+		if (this.stage > -1) {
 			return false; // Can only plant in empty slots
 		}
 		this.stage = 0;
@@ -49,7 +49,6 @@ export class FarmPlanterModel {
 			return false; // Already empty
 		}
 		this.stage = -1;
-		this.stage = 0;
 		this.health = 0;
 		return true;
 	}
@@ -59,22 +58,22 @@ export class FarmPlanterModel {
 	}
 
 	decrimentHealth(amount: number): boolean {
-	// ✅ Already dead? Nothing to do, and definitely not "died this hit".
-	if (this.health <= 0) {
+		// ✅ Already dead? Nothing to do, and definitely not "died this hit".
+		if (this.health <= 0) {
+			return false;
+		}
+
+		const prevHealth = this.health;
+		this.health = Math.max(0, this.health - amount);
+
+		// Crop *just* died this call (crossed from >0 to 0)
+		if (prevHealth > 0 && this.health === 0) {
+			this.stage = -1;   // For now, destroyed crops use stage 0 (baby art)
+			return true;
+		}
+
 		return false;
 	}
-
-	const prevHealth = this.health;
-	this.health = Math.max(0, this.health - amount);
-
-	// Crop *just* died this call (crossed from >0 to 0)
-	if (prevHealth > 0 && this.health === 0) {
-		this.stage = 0;   // For now, destroyed crops use stage 0 (baby art)
-		return true;
-	}
-
-	return false;
-}
 
 
 	getHealth(): number {

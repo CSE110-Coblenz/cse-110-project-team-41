@@ -33,7 +33,6 @@ export class FarmScreenView implements View {
 	private group: Konva.Group;
 	private hudGroup: Konva.Group;
 	private hudBanner: Konva.Rect;
-	private player: Konva.Rect | null = null;
 	private scoreText: Konva.Text;
 	private cropText: Konva.Text;
 	private mineText: Konva.Text;
@@ -63,7 +62,6 @@ export class FarmScreenView implements View {
 
 	constructor(
 		handleKeydown: (event: KeyboardEvent) => void,
-		handleKeyup: (event: KeyboardEvent) => void,
 		handleStartDay: () => void,
 		handleEndGame: () => void,
 		registerEmu: (emu: FarmEmuController) => void,
@@ -76,10 +74,6 @@ export class FarmScreenView implements View {
 		window.addEventListener("keydown", (event) => {
 			const keyboardEvent = event as KeyboardEvent;
 			handleKeydown(keyboardEvent);
-		});
-		window.addEventListener("keyup", (event) => {
-			const keyboardEvent = event as KeyboardEvent;
-			handleKeyup(keyboardEvent);
 		});
 
 		this.group = new Konva.Group({ visible: false });
@@ -106,14 +100,6 @@ export class FarmScreenView implements View {
 			}
 		});
 
-		this.player = new Konva.Rect({
-			x: STAGE_WIDTH / 2 - 15,
-			y: STAGE_HEIGHT / 2,
-			width: 30,
-			height: 30,
-			fill: "#AA0000",
-		});
-		this.group.add(this.player);
 		this.minesLayer = new Konva.Group({ listening: false });
 		this.group.add(this.minesLayer);
 
@@ -280,28 +266,6 @@ export class FarmScreenView implements View {
 		this.hudGroup.add(endGameGroup);
 
 		this.group.add(this.hudGroup);
-
-		// Timer display (in HUD)
-		this.timerText = new Konva.Text({
-			x: STAGE_WIDTH / 2 - 50,
-			y: 30,
-			text: "Time: 60",
-			fontSize: 16,
-			fontFamily: "Arial",
-			fill: "white",
-		});
-		this.hudGroup.add(this.timerText);
-
-		//Round display (now shows day, in HUD)
-		this.roundText = new Konva.Text({
-			x: STAGE_WIDTH / 2 - 150,
-			y: 30,
-			text: "Day: 1",
-			fontSize: 16,
-			fontFamily: "Arial",
-			fill: "white",
-		});
-		this.hudGroup.add(this.roundText);
 
 		this.menuOverlay = new Konva.Group({ visible: false });
 
@@ -708,18 +672,6 @@ export class FarmScreenView implements View {
 	updateRound(day: number): void {
 		this.roundText.text(`Day: ${day}`);
 		this.group.getLayer()?.draw();
-	}
-
-	/**
-	 * Move the player a certain distance in a cardinal vector
-	 *
-	 * @param dx
-	 * @param dy
-	 */
-	movePlayerDelta(dx: number, dy: number): void {
-		if (!this.player) return;
-		this.player.x(this.player.x() + dx);
-		this.player.y(this.player.y() + dy);
 	}
 
 	setDefensePlaceClickHandler(handler: (x: number, y: number) => void): void {

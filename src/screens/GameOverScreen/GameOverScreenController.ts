@@ -1,12 +1,11 @@
-import { ScreenController } from "../../types.ts";
+import type { GameStatusController } from "../../controllers/GameStatusController.ts";
 import type { ScreenSwitcher } from "../../types.ts";
+import { ScreenController } from "../../types.ts";
 import {
 	GameOverScreenModel,
 	type LeaderboardEntry,
 } from "./GameOverScreenModel.ts";
 import { GameOverScreenView } from "./GameOverScreenView.ts";
-import { AudioManager } from "../../services/AudioManager.ts";
-import type { GameStatusController } from "../../controllers/GameStatusController.ts";
 
 const LEADERBOARD_KEY = "farmDefenseLeaderboard";
 const MAX_LEADERBOARD_ENTRIES = 10;
@@ -19,9 +18,8 @@ export class GameOverScreenController extends ScreenController {
 	private view: GameOverScreenView;
 	private screenSwitcher: ScreenSwitcher;
 	private status: GameStatusController ;
-	private audio: AudioManager;
 
-	constructor(screenSwitcher: ScreenSwitcher, status: GameStatusController ,audio: AudioManager) {
+	constructor(screenSwitcher: ScreenSwitcher, status: GameStatusController) {
 		super();
 		this.status = status;
 		this.screenSwitcher = screenSwitcher;
@@ -30,8 +28,6 @@ export class GameOverScreenController extends ScreenController {
 			() => this.handlePlayAgainClick(),
 			(name) => this.handleNameEntered(name)
 		);
-
-		this.audio = audio;
 	}
 
 	
@@ -53,9 +49,6 @@ export class GameOverScreenController extends ScreenController {
 
 		// Pass the boolean to the view
 		this.view.show(isHighScore);
-
-		// Play a game over sound effect (BGM handled by App)
-		this.audio.playSfx("gameover");
 	}
 
 	/**

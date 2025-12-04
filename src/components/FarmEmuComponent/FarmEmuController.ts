@@ -17,13 +17,16 @@ export class FarmEmuController {
 	private randomMove: [number, number] = [0, 0];
 	private randomMoveCountdown: number = 0;
 
-	private targetX = 0;
-	private targetY = 0;
+	private targetX: number | null = null;
+	private targetY: number | null = null;
 
 	constructor(group: Konva.Group, startX: number, startY: number) {
 		this.model = new FarmEmuModel();
 		this.view = new FarmEmuView(group, startX, startY);
 		this.id = FarmEmuController.nextId++;
+		const randomDir = [[0, 1], [1, 0], [1, 1]][Math.floor(Math.random() * 3)] as [number, number];
+		this.randomMove = [randomDir[0] * (Math.random() < 0.5 ? -1 : 1), randomDir[1] * (Math.random() < 0.5 ? -1 : 1)];
+
 		requestAnimationFrame(this.gameLoop);
 	}
 
@@ -38,6 +41,20 @@ export class FarmEmuController {
 		const emu = this.view.getView()
 		if (!emu) {
 			requestAnimationFrame(this.gameLoop);
+			return;
+		}
+
+		if (!this.targetX || !this.targetY) {
+			if (this.randomMoveCountdown > 0) {
+				this.view.moveDelta(this.randomMove[0] * EMU_SPEED * deltaTime, this.randomMove[1] * EMU_SPEED * deltaTime);
+				this.randomMoveCountdown--;
+				requestAnimationFrame(this.gameLoop);
+			} else {
+				this.randomMoveCountdown = 30;
+				const randomDir = [[0, 1], [1, 0], [1, 1]][Math.floor(Math.random() * 3)] as [number, number];
+				this.randomMove = [randomDir[0] * (Math.random() < 0.5 ? -1 : 1), randomDir[1] * (Math.random() < 0.5 ? -1 : 1)];
+				requestAnimationFrame(this.gameLoop);
+			}
 			return;
 		}
 
@@ -75,6 +92,9 @@ export class FarmEmuController {
 		this.targetY = target.y();
 	}
 
+	hasTarget(): boolean {
+		return !!(this.targetX && this.targetY);
+	}
 
 	getView(): Konva.Image | null {
 		return this.view.getView();
