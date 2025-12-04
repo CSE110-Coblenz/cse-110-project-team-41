@@ -1,9 +1,16 @@
+import { GameStatusController } from "../../controllers/GameStatusController";
+
 /**
  * GameScreenModel - Manages game state
  */
 export class FarmScreenModel {
 	private score = 0;
 	private spawnNum = 20;
+	private status: GameStatusController;
+
+	constructor(status: GameStatusController) {
+		this.status = status
+	}
 
 	/**
 	 * Reset game state for a new game
@@ -31,9 +38,8 @@ export class FarmScreenModel {
 	/** 
 	 * Increases the amount of Emus to spawn
 	*/
-
 	updateSpawn(): void {
-		this.spawnNum = Math.ceil(this.spawnNum * 1.3);
+		this.spawnNum = Math.ceil(this.status.getDay() * 1.3);
 	}
 
 	/**

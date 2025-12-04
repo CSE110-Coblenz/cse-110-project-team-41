@@ -10,6 +10,8 @@ export class FarmPlanterController {
 	private harvestHandler: (() => void) | null = null;
 	private plantHandler: (() => void) | null = null;
 	private status: GameStatusController | null = null;
+	private static nextId = 1;
+	private id: number;
 
 	constructor(group: Konva.Group, startX: number, startY: number, status: GameStatusController | null = null) {
 		this.model = new FarmPlanterModel();
@@ -23,6 +25,11 @@ export class FarmPlanterController {
 			() => this.model.isEmpty()
 		);
 		this.view.setStage(this.model.getStage());
+		this.id = FarmPlanterController.nextId++;
+	}
+
+	getId(): number {
+		return this.id;
 	}
 
 	setOnHarvest(handler: () => void): void {
@@ -63,14 +70,28 @@ export class FarmPlanterController {
 		return false;
 	}
 
+	takeDamage(amount: number): boolean {
+		const died = this.model.decrimentHealth(amount);
+		this.view.setStage(this.model.getStage());
+		if (died){console.log("Planter " + this.getId() + " IS DEAD!!!!");}
+		return died;
+	}
+
+	// destroyCrop(): void {
+	// 	//The harvest call should destroy the stage for the crop
+	// 	this.model.harvest();
+	// 	this.view.setStage(this.model.getStage());
+	// }
+
 	private handleClick(): void {
 		// If empty, try to plant
 		if (this.model.isEmpty()) {
 			if (this.status && this.status.getItemCount(GameItem.Crop) > 0) {
 				if (this.model.plant()) {
+					console.log("planted")
 					this.status.removeFromInventory(GameItem.Crop, 1);
 					this.view.setStage(this.model.getStage());
-					this.plantHandler?.();
+					this.plantHandler!();
 				}
 			}
 			return;
