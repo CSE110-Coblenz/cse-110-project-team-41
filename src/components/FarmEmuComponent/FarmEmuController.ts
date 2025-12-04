@@ -11,6 +11,9 @@ export class FarmEmuController {
 	private view: FarmEmuView;
 	private lastTickTime: number | null = null;
 
+	private static nextId = 1;
+	private id: number;
+
 	private randomMove: [number, number] = [0, 0];
 	private randomMoveCountdown: number = 0;
 
@@ -20,7 +23,7 @@ export class FarmEmuController {
 	constructor(group: Konva.Group, startX: number, startY: number) {
 		this.model = new FarmEmuModel();
 		this.view = new FarmEmuView(group, startX, startY);
-
+		this.id = FarmEmuController.nextId++;
 		requestAnimationFrame(this.gameLoop);
 	}
 
@@ -44,7 +47,7 @@ export class FarmEmuController {
 			requestAnimationFrame(this.gameLoop);
 			return;
 		} else {
-			if (Math.random() < EMU_WALK_RANDOMIZATION) {
+			if (Math.random() < EMU_WALK_RANDOMIZATION) { //EMU_WALK_RANDOMIZATION
 				this.randomMoveCountdown = 30;
 				const randomDir = [[0, 1], [1, 0], [1, 1]][Math.floor(Math.random() * 3)] as [number, number];
 				this.randomMove = [randomDir[0] * (Math.random() < 0.5 ? -1 : 1), randomDir[1] * (Math.random() < 0.5 ? -1 : 1)];
@@ -83,5 +86,13 @@ export class FarmEmuController {
 
 	reduceHealth(amount: number): void {
     	this.model.decrementHealth(amount);
+	}
+
+	getDamage(): number {
+		return this.model.getDamage();
+	}
+
+	getId(): number {
+		return this.id;
 	}
 }

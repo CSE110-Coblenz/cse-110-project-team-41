@@ -140,6 +140,8 @@ export class FarmScreenView implements View {
 				}
 			}
 		});
+		this.minesLayer = new Konva.Group({ listening: false });
+		this.group.add(this.minesLayer);
 
 		/**
 		 * Create improved HUD with dark banner at top

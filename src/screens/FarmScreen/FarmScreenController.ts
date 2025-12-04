@@ -39,6 +39,7 @@ export class FarmScreenController extends ScreenController {
 	private status: GameStatusController;
 	private audio: AudioManager;
 	private emus: FarmEmuController[] = [];
+	private emuTargets = new Map<FarmEmuController, FarmPlanterController | null>;
 	private planters: FarmPlanterController[] = [];
 	private morning: MorningEventsScreenController | null = null;
 	private planningPhase: PlanningPhaseController | null = null;
@@ -121,8 +122,11 @@ export class FarmScreenController extends ScreenController {
 		}
 
 		this.checkMineCollisions();
-		this.checkEmuCropCollisions();
+		this.checkEmuCropCollisions(deltaTime);
 		this.checkDefenseEmuInteractions(deltaTime);
+		if (this.lastTickTime == null){
+			this.lastTickTime = timestamp;
+		}
 
 		// Request the next frame
 		requestAnimationFrame(this.gameLoop);
@@ -420,13 +424,19 @@ export class FarmScreenController extends ScreenController {
 		this.handleMiniGames(this.status.getDay());
 		this.planters.forEach((planter) => planter.advanceDay());
 		this.model.updateSpawn();
+		this.showPlanningPhase();
+		this.view.spawnEmus(this.model.getSpawn()); //Change back to this.model.getSpawn()
 		this.resetMines();
 		this.updateCropDisplay();
-		this.showPlanningPhase();
+
+		this.assignTargetsToAllEmus();
+
+		this.startRound();
 	}
 
 	private registerEmu(emu: FarmEmuController): void {
 		this.emus.push(emu);
+		this.emuTargets.set(emu, null);
 	}
 
 	private removeEmus(): void {
@@ -450,6 +460,115 @@ export class FarmScreenController extends ScreenController {
 			this.updateCropDisplay();
 		});
 	}
+
+	//For Emu crop interactions:
+
+	private getPlantersWithCrop(): FarmPlanterController[] {
+		return this.planters.filter(p => p.getHasCrop());
+	}
+
+	private assignTargetToEmu(emu: FarmEmuController): void {
+		const candidates = this.getPlantersWithCrop();
+		if (!candidates.length) {
+			// No crops left – game is over!!!!:
+			// this.endGame();
+			this.emuTargets.set(emu, null);
+			return;
+		}
+
+		const planter = candidates[Math.floor(Math.random() * candidates.length)];
+		const target = planter.getView();
+		if (target) {
+			emu.setTarget(target);
+			this.emuTargets.set(emu, planter);
+		}
+	}
+
+	private assignTargetsToAllEmus(): void {
+		const candidates = this.getPlantersWithCrop();
+		if (!candidates.length) {
+			for (const emu of this.emus){
+				this.emuTargets.set(emu, null);
+			}
+			return;
+		}
+
+		for (const emu of this.emus) {
+			const planter = candidates[Math.floor(Math.random() * candidates.length)];
+			const target = planter.getView();
+			if (target) {
+				emu.setTarget(target);
+				this.emuTargets.set(emu, planter);
+			}
+		}
+	}
+
+	private checkEmuCropCollisions(deltaTime: number): void {
+		if (!this.emus.length || !this.planters.length) {
+			return;
+		}
+
+		for (const emu of this.emus) {
+			const emuShape = emu.getView();
+			if (!emuShape) {
+				continue;
+			}
+
+			const emuX = emuShape.x();
+			const emuY = emuShape.y();
+			const emuWidth = emuShape.width();
+			const emuHeight = emuShape.height();
+
+			for (const planter of this.planters) {
+				// Skip planters with no living crop
+				if (!planter.getHasCrop()) {
+					continue;
+				}
+
+				const planterRect = planter.getView();
+				if (!planterRect) {
+					continue;
+				}
+
+				const planterX = planterRect.x();
+				const planterY = planterRect.y();
+				const planterWidth = planterRect.width();
+				const planterHeight = planterRect.height();
+
+				const isColliding =
+					emuX < planterX + planterWidth &&
+					emuX + emuWidth > planterX &&
+					emuY < planterY + planterHeight &&
+					emuY + emuHeight > planterY;
+
+				if (!isColliding) {
+					continue;
+				}
+
+				//Emu is “attacking” this crop
+				this.emuTargets.set(emu, planter);
+				const dps = emu.getDamage();
+				const damageThisFrame = dps * deltaTime;
+				const cropDied = planter.takeDamage(damageThisFrame);
+
+				if (cropDied) {
+					this.audio.playSfx("harvest");
+					this.updateCropDisplay();
+					//console.log("\n CROP DIED TO EMU (FS_CONTROLLER)");
+					//Retarget all emus targeted on this crop to the next non-destroyed crop
+					for (const otherEmu of this.emus){
+						const target = this.emuTargets.get(otherEmu);
+						if (target === planter){
+							this.assignTargetToEmu(otherEmu);
+						}
+					}
+				}
+
+				break;
+			}
+		}
+	}
+
 
 	private handleMenuButton(): void {
 		this.stopTimer();
@@ -617,52 +736,6 @@ export class FarmScreenController extends ScreenController {
 		);
 	}
 
-	private checkEmuCropCollisions(): void {
-		if (!this.emus.length || !this.planters.length) {
-			return;
-		}
-
-		for (const emu of this.emus) {
-			const emuShape = emu.getView();
-			if (!emuShape) {
-				continue;
-			}
-
-			const emuX = emuShape.x();
-			const emuY = emuShape.y();
-			const emuWidth = emuShape.width();
-			const emuHeight = emuShape.height();
-
-			for (const planter of this.planters) {
-				// Skip if planter is empty
-				if (planter.isEmpty()) {
-					continue;
-				}
-
-				const planterRect = planter.getView();
-				if (!planterRect) {
-					continue;
-				}
-
-				const planterX = planterRect.x();
-				const planterY = planterRect.y();
-				const planterWidth = planterRect.width();
-				const planterHeight = planterRect.height();
-
-				// Check collision
-				if (
-					emuX < planterX + planterWidth &&
-					emuX + emuWidth > planterX &&
-					emuY < planterY + planterHeight &&
-					emuY + emuHeight > planterY
-				) {
-					// Emu is touching planter - destroy the crop
-					planter.destroyCrop();
-					this.audio.playSfx("harvest"); // Use harvest sound for crop destruction
-				}
-			}
-		}
-	}
 
 	private checkDefenseEmuInteractions(_deltaTime: number): void {
 		if (!this.defenses.length || !this.emus.length || this.isPlanningPhase) {
