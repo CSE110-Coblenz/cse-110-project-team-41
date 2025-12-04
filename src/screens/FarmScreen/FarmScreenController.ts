@@ -60,10 +60,10 @@ export class FarmScreenController extends ScreenController {
 		this.audio = audio;
 		this.screenSwitcher = _screenSwitcher;
 
-		this.model = new FarmScreenModel();
+		this.model = new FarmScreenModel(this.status);
 		this.view = new FarmScreenView(
 			(event: KeyboardEvent) => this.handleKeydown(event),
-			() => this.handleEndDay(),
+			() => this.endRound(),
 			() => this.handleEndGame(),
 			(emu: FarmEmuController) => this.registerEmu(emu),
 			() => this.removeEmus(),
@@ -146,7 +146,6 @@ export class FarmScreenController extends ScreenController {
 		this.view.updateScore(this.model.getScore());
 		this.view.hideMenuOverlay();
 		this.resetMines();
-		this.view.spawnEmus(this.model.getSpawn());
 		this.view.updateTimer(this.timeRemaining);
 		this.updateCropDisplay();
 		this.view.show();
@@ -332,13 +331,6 @@ export class FarmScreenController extends ScreenController {
         event.preventDefault();
     }
 
-	/**
-	 * Start day
-	 */
-	private handleEndDay(): void {
-		this.endRound();
-	}
-
 	private handleEndGame(): void {
 		// End game button - trigger game over
 		this.stopTimer();
@@ -392,7 +384,6 @@ export class FarmScreenController extends ScreenController {
 		this.planters.forEach((planter) => planter.advanceDay());
 		this.model.updateSpawn();
 		this.showPlanningPhase();
-		this.view.spawnEmus(this.model.getSpawn()); //Change back to this.model.getSpawn()
 		this.resetMines();
 		this.updateCropDisplay();
 

@@ -62,7 +62,7 @@ export class FarmScreenView implements View {
 
 	constructor(
 		handleKeydown: (event: KeyboardEvent) => void,
-		handleStartDay: () => void,
+		endRound: () => void,
 		handleEndGame: () => void,
 		registerEmu: (emu: FarmEmuController) => void,
 		removeEmus: () => void,
@@ -233,8 +233,7 @@ export class FarmScreenView implements View {
 			listening: true,
 		});
 		// Attach event to the GROUP so background doesn't block clicks
-		startDayGroup.on("mouseup", handleStartDay);
-		startDayGroup.on("click", handleStartDay);
+		startDayGroup.on("click", endRound);
 		startDayGroup.add(startDayBackground);
 		startDayGroup.add(startDayButton);
 		this.hudGroup.add(startDayGroup);
