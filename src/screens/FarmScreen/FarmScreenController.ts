@@ -321,9 +321,9 @@ export class FarmScreenController extends ScreenController {
 		this.view.updateScore(this.model.getScore());
 		this.updateCropDisplay();
 		this.timeRemaining = GAME_DURATION;
-		this.view.hideMenuOverlay();
 		this.view.updateTimer(this.timeRemaining);
 		this.view.updateRound(this.status.getDay());
+		this.view.hideMenuOverlay();
 		this.view.show();
 
 		this.spawnEmusForCurrentRound();
@@ -799,6 +799,19 @@ export class FarmScreenController extends ScreenController {
 		}
 		this.activeMines.push({ node: placement.node, size: placement.size });
 		this.updateCropDisplay();
+	}
+
+	/**
+	 * End the game (called when player's crops are taken out)
+	 * Should be called in game loop
+	 */
+	endGame(): void {
+        this.view.clearEmus();
+		this.screenSwitcher.switchToScreen({ 
+			type: "game_over", 
+			survivalDays: this.status.getDay(),
+			score: this.getFinalScore() 
+		});
 	}
 }
 

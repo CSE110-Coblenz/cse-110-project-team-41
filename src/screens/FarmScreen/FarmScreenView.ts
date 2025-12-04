@@ -431,6 +431,27 @@ export class FarmScreenView implements View {
 
 		// Add menu overlay last so it appears on top of everything
 		this.group.add(this.menuOverlay);
+		//Timer display:
+		this.timerText = new Konva.Text({
+			x: STAGE_WIDTH - 380,
+			y: 20,
+			text: "Time: 60",
+			fontSize: 32,
+			fontFamily: "Arial",
+			fill: "white",
+		});
+		this.group.add(this.timerText);
+
+		//Round display:
+		this.roundText = new Konva.Text({
+			x: STAGE_WIDTH - 540,
+			y: 20,
+			text: "Day: 1",
+			fontSize: 32,
+			fontFamily: "Arial",
+			fill: "white",
+		});
+		this.group.add(this.roundText);
 	}
 
 	//For adding overlays to access minigames:
