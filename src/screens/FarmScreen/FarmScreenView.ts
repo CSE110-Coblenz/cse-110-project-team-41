@@ -38,6 +38,8 @@ export class FarmScreenView implements View {
 	private cropText: Konva.Text;
 	private mineText: Konva.Text;
 	private menuOverlay: Konva.Group;
+	private huntMenuOverlay: Konva.Group;
+	private eggMenuOverlay: Konva.Group;
 	private minesLayer: Konva.Group;
 	private defensesLayer: Konva.Group;
 	private mines: Konva.Image[] = [];
@@ -45,6 +47,11 @@ export class FarmScreenView implements View {
 	private onDefensePlaceClick: ((x: number, y: number) => void) | null = null;
 	private menuSaveHandler: (() => void) | null = null;
 	private menuBackHandler: (() => void) | null = null;
+	//Event handlers for skip/continue functionality for hunt/egg minigames:
+	private huntContinueHandler: (() => void) | null = null;
+	private huntSkipHandler: (() => void) | null = null;
+	private eggContinueHandler: (() => void) | null = null;
+	private eggSkipHandler: (() => void) | null = null;
 	private registerEmu: ((emu: FarmEmuController) => void) | null = null;
 	private removeEmus: (() => void) | null = null;
 	private timerText: Konva.Text;
@@ -398,6 +405,22 @@ export class FarmScreenView implements View {
 		this.menuOverlay.add(saveButton);
 		this.menuOverlay.add(backButton);
 
+		//Hunting Menu overlay:
+		this.huntMenuOverlay = this.createOverlay(
+			"You Have An Opportunity to Hunt!!!",
+			() => this.huntContinueHandler?.(),
+			() => this.huntSkipHandler?.()
+		);
+		this.group.add(this.huntMenuOverlay);
+
+		//Egg Menu overlay:
+		this.eggMenuOverlay = this.createOverlay(
+			"You Have An Opportunity to Collect!!!",
+			() => this.eggContinueHandler?.(),
+			() => this.eggSkipHandler?.()
+		);
+		this.group.add(this.eggMenuOverlay);
+
 		// Planters
 		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
 			for (let y = 200; y < (STAGE_HEIGHT); y += (STAGE_HEIGHT - 200) / 4) {
@@ -408,6 +431,118 @@ export class FarmScreenView implements View {
 
 		// Add menu overlay last so it appears on top of everything
 		this.group.add(this.menuOverlay);
+	}
+
+	//For adding overlays to access minigames:
+	private createOverlay(msg: string, 
+		continueHandler: (() => void) | null, 
+		skipHandler: (() => void) | null) {
+
+		const overlay = new Konva.Group({ visible: false });
+		const panelWidth = 336;
+		const panelHeight = 208;
+		const panelX = (STAGE_WIDTH - panelWidth) / 2;
+		const panelY = (STAGE_HEIGHT - panelHeight) / 2;
+
+		const overlayBackground = new Konva.Rect({
+			x: 0,
+			y: 0,
+			width: STAGE_WIDTH,
+			height: STAGE_HEIGHT,
+			fill: "rgba(0, 0, 0, 0.55)",
+		});
+		overlayBackground.on("mouseup", (evt) => {
+			evt.cancelBubble = true;
+		});
+
+
+		const overlayPanel = new Konva.Rect({
+			x: panelX,
+			y: panelY,
+			width: panelWidth,
+			height: panelHeight,
+			fill: "#f5f5f5",
+			stroke: "#333333",
+			strokeWidth: 2,
+			cornerRadius: 12,
+		});
+
+		const overlayTitle = new Konva.Text({
+			x: panelX,
+			y: panelY + 19,
+			width: panelWidth,
+			text: msg,
+			fontSize: 26,
+			fontFamily: "Arial",
+			fill: "#333333",
+			align: "center",
+		});
+
+		const skipButton = new Konva.Group({
+			x: panelX + 32,
+			y: panelY + 80,
+			cursor: "pointer",
+		});
+
+		const skipRect = new Konva.Rect({
+			width: panelWidth - 64,
+			height: 45,
+			fill: "#2e7d32",
+			cornerRadius: 10,
+		});
+
+		const skipText = new Konva.Text({
+			text: "Skip",
+			fontSize: 20,
+			fontFamily: "Arial",
+			fill: "white",
+			width: panelWidth - 64,
+			y: 14,
+			align: "center",
+		});
+
+		skipButton.add(skipRect);
+		skipButton.add(skipText);
+		skipButton.on("mouseup", () => {
+			skipHandler?.();
+		});
+
+		const continueButton = new Konva.Group({
+			x: panelX + 32,
+			y: panelY + 136,
+			cursor: "pointer",
+		});
+
+		const continueRect = new Konva.Rect({
+			width: panelWidth - 64,
+			height: 45,
+			fill: "#c62828",
+			cornerRadius: 10,
+		});
+
+		const continueText = new Konva.Text({
+			text: "Continue",
+			fontSize: 20,
+			fontFamily: "Arial",
+			fill: "white",
+			width: panelWidth - 64,
+			y: 14,
+			align: "center",
+		});
+
+		continueButton.add(continueRect);
+		continueButton.add(continueText);
+		continueButton.on("mouseup", () => {
+			continueHandler?.();
+		});
+
+		overlay.add(overlayBackground);
+		overlay.add(overlayPanel);
+		overlay.add(overlayTitle);
+		overlay.add(skipButton);
+		overlay.add(continueButton);
+
+		return overlay
 	}
 
 	spawnEmus(n: number): void {
@@ -455,6 +590,19 @@ export class FarmScreenView implements View {
 		this.menuBackHandler = onBack;
 	}
 
+	//For hunting minigame:
+	setHuntMenuOptionHandlers(onSkip: () => void, onCont: () => void){
+		this.huntSkipHandler = onSkip;
+		this.huntContinueHandler = onCont;
+	}
+
+	//For egg collection minigame:
+
+	setEggMenuOptionHandlers(onSkip: () => void, onCont: () => void){
+		this.eggSkipHandler = onSkip;
+		this.eggContinueHandler = onCont;
+	}
+
 	showMenuOverlay(): void {
 		this.menuOverlay.visible(true);
 		this.group.getLayer()?.draw();
@@ -462,6 +610,30 @@ export class FarmScreenView implements View {
 
 	hideMenuOverlay(): void {
 		this.menuOverlay.visible(false);
+		this.group.getLayer()?.draw();
+	}
+
+	//Hide and Show hunt menu:
+
+	showHuntMenuOverlay(): void {
+		this.huntMenuOverlay.visible(true);
+		this.group.getLayer()?.draw();
+	}
+
+	hideHuntMenuOverlay(): void {
+		this.huntMenuOverlay.visible(false);
+		this.group.getLayer()?.draw();
+	}
+
+	//Hide and Show egg menu:
+
+	showEggMenuOverlay(): void {
+		this.eggMenuOverlay.visible(true);
+		this.group.getLayer()?.draw();
+	}
+
+	hideEggMenuOverlay(): void {
+		this.eggMenuOverlay.visible(false);
 		this.group.getLayer()?.draw();
 	}
 

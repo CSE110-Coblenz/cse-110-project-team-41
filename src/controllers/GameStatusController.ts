@@ -31,7 +31,7 @@ export class GameStatusController {
     }
 
     // Persistence
-    private save(): void {
+    save(): void {
         const s: PersistedState = {
             day: this.day,
             inventory: this.inventory,
