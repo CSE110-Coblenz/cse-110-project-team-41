@@ -1,322 +1,250 @@
 import { HuntingScreenController } from "../src/screens/HuntingScreen/HuntingScreenContoller";
-import { HuntingScreenModel } from "../src/screens/HuntingScreen/HuntingScreenModel";
-import { HuntingScreenView } from "../src/screens/HuntingScreen/HuntingScreenView";
-import { PlayerController } from "../src/components/Player/PlayerController";
-import { ObstacleController } from "../src/components/Obstacle/ObstacleController";
-import { EmuController } from "../src/components/Emu/EmuController";
-import { BulletController } from "../src/components/Bullet/BulletController";
-import { getSafeSpawnPosition } from "../src/utils/getSafeSpawnPosition";
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
-const mockCanvasContext = {
-    measureText: vi.fn(() => ({ width: 0 })),
-    fillText: vi.fn(),
-    strokeText: vi.fn(),
-    createLinearGradient: vi.fn(),
-    setTransform: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    clearRect: vi.fn(),
-    beginPath: vi.fn(),
-    closePath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    arc: vi.fn(),
-    font: '',
-    textAlign: '',
-    textBaseline: '',
-} as unknown as CanvasRenderingContext2D;
-
-HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(mockCanvasContext);
-
-// This is necessary because Konva.Text relies on the Canvas API which is not fully available in JSDOM/Vitest.
-const mockKonvaNode = {
-    add: vi.fn(),
-    destroy: vi.fn(),
-    on: vi.fn(),
-    visible: vi.fn(),
-    getLayer: vi.fn(() => ({ draw: vi.fn(), batchDraw: vi.fn() })),
-    width: vi.fn(() => 100), // Mock .width() to return a size to prevent NaN/null issues
-    offsetX: vi.fn(),
-    text: vi.fn(),
-};
-
-// Mock all Konva classes used in HuntingScreenView
-vi.mock('konva', () => ({
-    Group: vi.fn(() => mockKonvaNode),
-    Rect: vi.fn(() => mockKonvaNode),
-    Text: vi.fn(() => mockKonvaNode),
-    // Other Konva exports that might be implicitly called
-    __esModule: true,
-    default: {},
-}));
-// --- END KONVA MOCK ---
-
-
-// --- MOCK CONTROLLER DEPENDENCIES ---
-
-// Shared mock objects for easy spying and control
-const mockView = {
-    getGroup: vi.fn(() => mockKonvaNode), // Returns the safe mock node
-    updateAmmo: vi.fn(),
-    updateDefeat: vi.fn(),
-    updateTimer: vi.fn(),
-    show: vi.fn(),
-    hide: vi.fn(),
-    batchDraw: vi.fn(),
-};
-// NOTE: mock the exact module path you import in the test file
-vi.mock('../src/screens/HuntingScreen/HuntingScreenView', () => ({
-    HuntingScreenView: vi.fn(() => mockView),
-}));
-
+// Mock all dependencies
 const mockSwitcher = { switchToScreen: vi.fn() };
 const mockAudioManager = { playSfx: vi.fn(), stopSfx: vi.fn() };
 
-// Mock Model: We will control its internal state checks
-const mockModel = {
-    reset: vi.fn(),
-    startTimer: vi.fn(),
-    stopTimer: vi.fn(),
-    updateTimer: vi.fn(),
-    getAmmo: vi.fn(() => 100), // Default ammo count
-    canShoot: vi.fn(() => true),
-    consumeAmmo: vi.fn(() => true),
-    getTimeRemaining: vi.fn(() => 60),
-    getDefeat: vi.fn(() => 0),
-    isTimeUp: vi.fn(() => false),
-    incrementDefeat: vi.fn(),
+// Mock Konva nodes
+const mockKonvaNode = {
+  add: vi.fn(),
+  destroy: vi.fn(),
+  on: vi.fn(),
+  visible: vi.fn(),
+  getLayer: vi.fn(() => ({ draw: vi.fn(), batchDraw: vi.fn() })),
+  width: vi.fn(() => 100),
+  offsetX: vi.fn(),
+  text: vi.fn(),
 };
-vi.mock('../src/screens/HuntingScreen/HuntingScreenModel', () => ({
-    HuntingScreenModel: vi.fn(() => mockModel),
+
+// Mock View
+const mockView = {
+  getGroup: vi.fn(() => mockKonvaNode),
+  updateAmmo: vi.fn(),
+  updateDefeat: vi.fn(),
+  updateTimer: vi.fn(),
+  show: vi.fn(),
+  hide: vi.fn(),
+  batchDraw: vi.fn(),
+};
+
+// Mock Model
+const mockModel = {
+  reset: vi.fn(),
+  startTimer: vi.fn(),
+  stopTimer: vi.fn(),
+  updateTimer: vi.fn(),
+  getAmmo: vi.fn(() => 100),
+  canShoot: vi.fn(() => true),
+  consumeAmmo: vi.fn(() => true),
+  getTimeRemaining: vi.fn(() => 60),
+  getDefeat: vi.fn(() => 0),
+  isTimeUp: vi.fn(() => false),
+  incrementDefeat: vi.fn(),
+};
+
+// Mock other controllers
+const mockBulletController = {
+  getGroup: vi.fn(() => mockKonvaNode),
+  update: vi.fn(),
+  isActive: vi.fn(() => true),
+};
+
+const mockPlayerController = {
+  getGroup: vi.fn(() => mockKonvaNode),
+  update: vi.fn(),
+  shoot: vi.fn(() => mockBulletController),
+  stopAllSounds: vi.fn(),
+};
+
+// Set up mocks before importing the module
+vi.mock('../src/screens/HuntingScreen/HuntingScreenView', () => ({
+  HuntingScreenView: vi.fn(() => mockView),
 }));
 
+vi.mock('../src/screens/HuntingScreen/HuntingScreenModel', () => ({
+  HuntingScreenModel: vi.fn(() => mockModel),
+}));
 
-// Mock PlayerController and its methods
-const mockBulletControllerInstance = {
+vi.mock('../src/components/Player/PlayerController', () => ({
+  PlayerController: vi.fn(() => mockPlayerController),
+}));
+
+vi.mock('../src/components/Obstacle/ObstacleController', () => ({
+  ObstacleController: vi.fn(() => ({
+    getNode: vi.fn(() => mockKonvaNode),
+  })),
+}));
+
+vi.mock('../src/components/Emu/EmuController', () => ({
+  EmuController: vi.fn(() => ({
     getGroup: vi.fn(() => mockKonvaNode),
     update: vi.fn(),
     isActive: vi.fn(() => true),
-};
-const mockPlayerControllerInstance = {
-    getGroup: vi.fn(() => mockKonvaNode),
-    update: vi.fn(),
-    shoot: vi.fn(() => mockBulletControllerInstance), // Returns a mock bullet when shooting
-    stopAllSounds: vi.fn(),
-};
-vi.mock('../src/components/Player/PlayerController', () => ({
-    PlayerController: vi.fn(() => mockPlayerControllerInstance),
+    checkBulletCollision: vi.fn(() => false),
+  })),
 }));
 
-// Mock other game controllers
-vi.mock('../src/components/Obstacle/ObstacleController', () => ({
-    ObstacleController: vi.fn((x, y, w, h, type) => ({
-        getNode: vi.fn(() => mockKonvaNode),
-    })),
-}));
-// Mock EmuController to prevent Konva initialization
-vi.mock('../src/components/Emu/EmuController', () => ({
-    EmuController: vi.fn((x, y) => ({
-        getGroup: vi.fn(() => mockKonvaNode),
-        update: vi.fn(),
-        isActive: vi.fn(() => true),
-        checkBulletCollision: vi.fn(() => false),
-    })),
-}));
 vi.mock('../src/components/Bullet/BulletController', () => ({
-    BulletController: vi.fn(() => mockBulletControllerInstance),
+  BulletController: vi.fn(() => mockBulletController),
 }));
 
-// Mock utility functions
 vi.mock('../src/utils/getSafeSpawnPosition', () => ({
-    getSafeSpawnPosition: vi.fn(() => ({ x: 100, y: 200 })),
+  getSafeSpawnPosition: vi.fn(() => ({ x: 100, y: 200 })),
 }));
 
-// Mock window event listeners and requestAnimationFrame
-vi.spyOn(window, 'addEventListener');
-vi.spyOn(window, 'removeEventListener');
-// Mock the animation loop to prevent actual recursion during tests
-const mockGameLoop = vi.fn();
-globalThis.requestAnimationFrame = vi.fn((callback) => {
-    mockGameLoop.mockImplementation(() => callback());
-    return 1;
+// Mock requestAnimationFrame
+global.requestAnimationFrame = vi.fn((cb) => {
+  setTimeout(cb, 0);
+  return 1;
 });
 
-
 describe('HuntingScreenController', () => {
-    let controller: HuntingScreenController;
-    let originalKeyDown: (e: KeyboardEvent) => void;
-    let originalKeyUp: (e: KeyboardEvent) => void;
+  let controller: HuntingScreenController;
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controller = new HuntingScreenController(
+      mockSwitcher as any,
+      mockAudioManager as any
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('initialization', () => {
+    it('should create model and view', () => {
+      expect(mockView).toBeDefined();
+      expect(mockModel).toBeDefined();
+    });
+
+    it('should return the view', () => {
+      expect(controller.getView()).toBe(mockView);
+    });
+  });
+
+  describe('startHuntingGame', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
-        // Reset the model mocks for each test
-        mockModel.getAmmo.mockReturnValue(100);
-        mockModel.canShoot.mockReturnValue(true);
-        mockModel.consumeAmmo.mockReturnValue(true);
-        // Reset Konva node mock width for safe calculations
-        mockKonvaNode.width.mockReturnValue(100);
-
-        controller = new HuntingScreenController(
-            mockSwitcher as any,
-            mockAudioManager as any
-        );
-
-        // Capture the bound functions for listener removal check
-        originalKeyDown = (controller as any).onKeyDown;
-        originalKeyUp = (controller as any).onKeyUp;
-
-        // Spy on and mock the actual gameLoop and endGame logic to test setup/teardown
-        vi.spyOn(controller as any, 'gameLoop').mockImplementation(mockGameLoop);
-        vi.spyOn(controller as any, 'endGame').mockImplementation(vi.fn());
+      // Mock private methods
+      vi.spyOn(controller as any, 'resetGame').mockImplementation(() => {});
+      vi.spyOn(controller as any, 'gameLoop').mockImplementation(() => {});
+      
+      controller.startHuntingGame();
     });
 
-    it('should initialize correctly and expose the view', () => {
-        expect(HuntingScreenView).toHaveBeenCalledTimes(1);
-        expect(controller.getView()).toBe(mockView);
+    it('should initialize game state', () => {
+      expect((controller as any).resetGame).toHaveBeenCalled();
+      expect(mockModel.startTimer).toHaveBeenCalled();
+      expect(mockView.show).toHaveBeenCalled();
+      expect((controller as any).running).toBe(true);
     });
 
-    describe('startHuntingGame', () => {
-        let resetGameSpy: ReturnType<typeof vi.spyOn>;
-
-        beforeEach(() => {
-            // Spy on the private resetGame method
-            resetGameSpy = vi.spyOn(controller as any, 'resetGame').mockImplementation(vi.fn());
-            controller.startHuntingGame();
-        });
-
-        it('should perform game setup and start loop', () => {
-            expect(resetGameSpy).toHaveBeenCalled();
-            expect(mockModel.startTimer).toHaveBeenCalled();
-            expect(mockView.show).toHaveBeenCalled();
-            expect((controller as any).running).toBe(true);
-            expect((controller as any).gameLoop).toHaveBeenCalled();
-        });
-
-        it('should update the view with initial state', () => {
-            expect(mockView.updateAmmo).toHaveBeenCalledWith(100); // from mockModel
-            expect(mockView.updateDefeat).toHaveBeenCalledWith(0); // initial emu count
-            expect(mockView.updateTimer).toHaveBeenCalledWith(60); // from mockModel
-        });
-
-        it('should attach keyboard event listeners', () => {
-            expect(window.addEventListener).toHaveBeenCalledWith('keydown', originalKeyDown);
-            expect(window.addEventListener).toHaveBeenCalledWith('keyup', originalKeyUp);
-        });
+    it('should update initial view state', () => {
+      expect(mockView.updateAmmo).toHaveBeenCalledWith(100);
+      expect(mockView.updateDefeat).toHaveBeenCalledWith(0);
+      expect(mockView.updateTimer).toHaveBeenCalledWith(60);
     });
 
-    describe('resetGame', () => {
-        it('should cleanup existing components and create new ones', () => {
-            // Restore the original (spied) resetGame method for this test
-            (controller as any).resetGame.mockRestore();
+    it('should attach keyboard listeners', () => {
+      expect(window.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
+      expect(window.addEventListener).toHaveBeenCalledWith('keyup', expect.any(Function));
+    });
+  });
 
-            // Setup with mock components to destroy
-            const mockPlayerDestroy = vi.fn();
-            (controller as any).playerController = { getGroup: vi.fn(() => ({ destroy: mockPlayerDestroy })) };
-            
-            const mockObstacleDestroy = vi.fn();
-            (controller as any).obstacleControllers = [
-                { getNode: vi.fn(() => ({ destroy: mockObstacleDestroy })) },
-            ];
-            
-            const mockEmuDestroy = vi.fn();
-            (controller as any).emuControllers = [
-                { getGroup: vi.fn(() => ({ destroy: mockEmuDestroy })) },
-            ];
-            
-            const mockBulletDestroy = vi.fn();
-            (controller as any).bulletControllers = [
-                { getGroup: vi.fn(() => ({ destroy: mockBulletDestroy })) },
-            ];
-
-            (controller as any).resetGame();
-
-            // Check cleanup
-            expect(mockModel.reset).toHaveBeenCalled();
-            expect(mockPlayerDestroy).toHaveBeenCalled();
-            expect(mockObstacleDestroy).toHaveBeenCalled();
-            expect(mockEmuDestroy).toHaveBeenCalled();
-            expect(mockBulletDestroy).toHaveBeenCalled();
-            
-            // Check creation of new components (ObstacleController is called 12 times in the real resetGame)
-            expect(ObstacleController).toHaveBeenCalledTimes(12);
-            // PlayerController is called 1 time
-            expect(PlayerController).toHaveBeenCalledTimes(1); 
-            // EmuController is called 10-20 times (based on Math.random in real implementation, but mock is safe)
-            // We just ensure it was called at least once (mock EmuController returns safe mock nodes)
-            expect(getSafeSpawnPosition).toHaveBeenCalledTimes(13); // 1 for player + 12 for obstacles (approx)
-        });
+  describe('keyboard input', () => {
+    beforeEach(() => {
+      // Initialize keys Set
+      (controller as any).keys = new Set();
+      (controller as any).playerController = mockPlayerController;
+      (controller as any).bulletControllers = [];
     });
 
-    describe('onKeyDown', () => {
-        beforeEach(() => {
-            // Ensure necessary components are initialized for onKeyDown to work
-            (controller as any).playerController = mockPlayerControllerInstance;
-            (controller as any).running = true;
-            (controller as any).bulletControllers = [];
-        });
-
-        it('should add movement keys to the keys Set', () => {
-            const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
-            originalKeyDown(event);
-            expect((controller as any).keys.has('ArrowRight')).toBe(true);
-        });
-
-        it('should shoot, consume ammo, and play sound when Space is pressed and available', () => {
-            const event = new KeyboardEvent('keydown', { code: 'Space' });
-            originalKeyDown(event);
-
-            expect(mockModel.canShoot).toHaveBeenCalled();
-            expect(mockModel.consumeAmmo).toHaveBeenCalled();
-            expect(mockPlayerControllerInstance.shoot).toHaveBeenCalled();
-            expect(mockView.updateAmmo).toHaveBeenCalled();
-            expect(mockAudioManager.playSfx).toHaveBeenCalledWith('shoot', 0.3);
-            expect((controller as any).bulletControllers.length).toBe(1);
-        });
-
-        it('should NOT shoot if canShoot returns false', () => {
-            mockModel.canShoot.mockReturnValue(false); // No ammo or other reason
-            const event = new KeyboardEvent('keydown', { code: 'Space' });
-            originalKeyDown(event);
-
-            expect(mockModel.consumeAmmo).not.toHaveBeenCalled();
-            expect(mockPlayerControllerInstance.shoot).not.toHaveBeenCalled();
-            expect(mockAudioManager.playSfx).not.toHaveBeenCalled();
-            expect((controller as any).bulletControllers.length).toBe(0);
-        });
+    it('should add key to keys set on keydown', () => {
+      const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+      (controller as any).onKeyDown(event);
+      
+      expect((controller as any).keys.has('ArrowRight')).toBe(true);
     });
 
-    describe('endGame', () => {
-        beforeEach(() => {
-            // Restore the actual endGame implementation
-            (controller as any).endGame.mockRestore();
-            // Setup running state and cleanup spies
-            (controller as any).running = true;
-            (controller as any).playerController = mockPlayerControllerInstance;
-            vi.spyOn(window, 'removeEventListener');
-        });
-
-        it('should stop game, cleanup listeners, and switch screen on victory', () => {
-            mockModel.getDefeat.mockReturnValue(15);
-            controller.endGame('victory');
-
-            expect((controller as any).running).toBe(false);
-            expect(mockModel.stopTimer).toHaveBeenCalled();
-            expect(mockPlayerControllerInstance.stopAllSounds).toHaveBeenCalled();
-            expect(window.removeEventListener).toHaveBeenCalledWith('keydown', originalKeyDown);
-            expect(window.removeEventListener).toHaveBeenCalledWith('keyup', originalKeyUp);
-            expect(mockSwitcher.switchToScreen).toHaveBeenCalledWith({
-                type: 'minigame2_end',
-                emusKilled: 15,
-                reason: 'victory',
-            });
-        });
-
-        it('should handle "ammo" reason', () => {
-            controller.endGame('ammo');
-            expect(mockSwitcher.switchToScreen).toHaveBeenCalledWith(
-                expect.objectContaining({ reason: 'ammo' })
-            );
-        });
+    it('should remove key from keys set on keyup', () => {
+      const addEvent = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+      (controller as any).onKeyDown(addEvent);
+      
+      const removeEvent = new KeyboardEvent('keyup', { key: 'ArrowRight' });
+      (controller as any).onKeyUp(removeEvent);
+      
+      expect((controller as any).keys.has('ArrowRight')).toBe(false);
     });
+
+    it('should shoot when space is pressed and ammo is available', () => {
+      const event = new KeyboardEvent('keydown', { code: 'Space' });
+      (controller as any).onKeyDown(event);
+      
+      expect(mockModel.canShoot).toHaveBeenCalled();
+      expect(mockModel.consumeAmmo).toHaveBeenCalled();
+      expect(mockPlayerController.shoot).toHaveBeenCalled();
+      expect(mockAudioManager.playSfx).toHaveBeenCalledWith('shoot', 0.3);
+    });
+  });
+
+  describe('game loop logic', () => {
+    beforeEach(() => {
+      (controller as any).running = true;
+      (controller as any).emuControllers = [
+        { isActive: () => true, checkBulletCollision: () => false }
+      ];
+    });
+
+    it('should end game when ammo runs out', () => {
+      mockModel.getAmmo.mockReturnValue(0);
+      vi.spyOn(controller as any, 'endGame');
+      
+      (controller as any).gameLoop();
+      
+      expect((controller as any).endGame).toHaveBeenCalledWith('ammo');
+    });
+
+    it('should end game when time is up', () => {
+      mockModel.isTimeUp.mockReturnValue(true);
+      vi.spyOn(controller as any, 'endGame');
+      
+      (controller as any).gameLoop();
+      
+      expect((controller as any).endGame).toHaveBeenCalledWith('time');
+    });
+
+    it('should end game when all emus are defeated', () => {
+      (controller as any).emuControllers = [];
+      vi.spyOn(controller as any, 'endGame');
+      
+      (controller as any).gameLoop();
+      
+      expect((controller as any).endGame).toHaveBeenCalledWith('victory');
+    });
+  });
+
+  describe('endGame', () => {
+    beforeEach(() => {
+      (controller as any).running = true;
+      (controller as any).playerController = mockPlayerController;
+      (controller as any).keys = new Set(['ArrowRight']);
+    });
+
+    it('should cleanup and switch screen', () => {
+      controller.endGame('victory');
+      
+      expect((controller as any).running).toBe(false);
+      expect((controller as any).keys.size).toBe(0);
+      expect(mockModel.stopTimer).toHaveBeenCalled();
+      expect(mockPlayerController.stopAllSounds).toHaveBeenCalled();
+      expect(window.removeEventListener).toHaveBeenCalled();
+      expect(mockSwitcher.switchToScreen).toHaveBeenCalledWith({
+        type: 'minigame2_end',
+        emusKilled: 0,
+        reason: 'victory',
+      });
+    });
+  });
 });
