@@ -544,7 +544,10 @@ export class FarmScreenView implements View {
 			case 3: location = [Math.random() * STAGE_WIDTH, STAGE_HEIGHT]; break;
 			}
 
-			const emu = new FarmEmuController(this.group, location[0], location[1]);
+			const emu = new FarmEmuController(this.group, location[0], location[1], () => {
+				emu.remove();
+				emu.setActive(false);
+			});
 			this.registerEmu(emu);
 		}
 	}

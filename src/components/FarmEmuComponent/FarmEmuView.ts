@@ -19,7 +19,7 @@ const createImage = (src: string): HTMLImageElement => {
 export class FarmEmuView {
 	private emu: Konva.Image | null = null;
 
-	constructor(group: Konva.Group, startX: number, startY: number) {
+	constructor(group: Konva.Group, startX: number, startY: number, onClick: () => void) {
 		const sprite = createImage(emuSrc);
 		this.emu = new Konva.Image({
 			x: startX,
@@ -27,7 +27,6 @@ export class FarmEmuView {
 			width: 36,
 			height: 36,
 			image: sprite,
-			listening: false,
 		});
 
 		if (!sprite.complete) {
@@ -37,6 +36,7 @@ export class FarmEmuView {
 			};
 		}
 
+		this.emu.on("click", onClick);
 		group.add(this.emu);
 	}
 

@@ -471,6 +471,10 @@ export class FarmScreenController extends ScreenController {
 		}
 
 		for (const emu of this.emus) {
+			if (!emu.isActive()) {
+				continue;
+			}
+
 			const emuShape = emu.getView();
 			if (!emuShape) {
 				continue;

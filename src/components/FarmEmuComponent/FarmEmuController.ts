@@ -20,17 +20,24 @@ export class FarmEmuController {
 	private targetX: number | null = null;
 	private targetY: number | null = null;
 
-	constructor(group: Konva.Group, startX: number, startY: number) {
-		this.model = new FarmEmuModel();
-		this.view = new FarmEmuView(group, startX, startY);
+	private active: boolean;
+
+	constructor(group: Konva.Group, startX: number, startY: number, onKill: () => void) {
+		this.model = new FarmEmuModel(() => onKill());
+		this.view = new FarmEmuView(group, startX, startY, () => this.model.decrementHealth(10));
 		this.id = FarmEmuController.nextId++;
 		const randomDir = [[0, 1], [1, 0], [1, 1]][Math.floor(Math.random() * 3)] as [number, number];
 		this.randomMove = [randomDir[0] * (Math.random() < 0.5 ? -1 : 1), randomDir[1] * (Math.random() < 0.5 ? -1 : 1)];
+		this.active = true;
 
 		requestAnimationFrame(this.gameLoop);
 	}
 
 	private gameLoop = (timestamp: number): void => {
+		if (!this.active) {
+			return;
+		}
+
 		if (!this.lastTickTime) {
 			this.lastTickTime = timestamp;
 		}
@@ -100,8 +107,16 @@ export class FarmEmuController {
 		return this.view.getView();
 	}
 
-	remove(): void{
+	remove(): void {
 		this.view.removeFromGroup();
+	}
+
+	setActive(isActive: boolean): void {
+		this.active = isActive;
+	}
+
+	isActive(): boolean {
+		return this.active;
 	}
 
 	reduceHealth(amount: number): void {
