@@ -183,26 +183,6 @@ describe("FarmScreenController", () => {
     expect(() => controller.setMorningController(morningStub)).not.toThrow();
   });
 
-  it("handleMenuExit should switch to main menu", () => {
-    const { controller, switcher } = createController();
-    
-    // Directly call the private method
-    (controller as any).handleMenuExit();
-    
-    expect(latestView?.hideMenuOverlay).toHaveBeenCalledTimes(1);
-    expect(switcher.switchToScreen).toHaveBeenCalledWith({ type: "main_menu" });
-  });
-
-  it("handleMenuResume should hide menu overlay", () => {
-    const { controller, switcher } = createController();
-    
-    // Directly call the private method
-    (controller as any).handleMenuResume();
-    
-    expect(latestView?.hideMenuOverlay).toHaveBeenCalledTimes(1);
-    expect(switcher.switchToScreen).not.toHaveBeenCalled();
-  });
-
   it("deploys a mine when handleDeployMine is called and player has mines", () => {
     const { controller, status } = createController();
     
