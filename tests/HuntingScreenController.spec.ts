@@ -8,6 +8,27 @@ import { BulletController } from "../src/components/Bullet/BulletController";
 import { getSafeSpawnPosition } from "../src/utils/getSafeSpawnPosition";
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+const mockCanvasContext = {
+    measureText: vi.fn(() => ({ width: 0 })),
+    fillText: vi.fn(),
+    strokeText: vi.fn(),
+    createLinearGradient: vi.fn(),
+    setTransform: vi.fn(),
+    fillRect: vi.fn(),
+    strokeRect: vi.fn(),
+    clearRect: vi.fn(),
+    beginPath: vi.fn(),
+    closePath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    arc: vi.fn(),
+    font: '',
+    textAlign: '',
+    textBaseline: '',
+} as unknown as CanvasRenderingContext2D;
+
+HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(mockCanvasContext);
+
 // This is necessary because Konva.Text relies on the Canvas API which is not fully available in JSDOM/Vitest.
 const mockKonvaNode = {
     add: vi.fn(),
@@ -44,7 +65,8 @@ const mockView = {
     hide: vi.fn(),
     batchDraw: vi.fn(),
 };
-vi.mock('./HuntingScreenView', () => ({
+// NOTE: mock the exact module path you import in the test file
+vi.mock('../src/screens/HuntingScreen/HuntingScreenView', () => ({
     HuntingScreenView: vi.fn(() => mockView),
 }));
 
@@ -65,7 +87,7 @@ const mockModel = {
     isTimeUp: vi.fn(() => false),
     incrementDefeat: vi.fn(),
 };
-vi.mock('./HuntingScreenModel', () => ({
+vi.mock('../src/screens/HuntingScreen/HuntingScreenModel', () => ({
     HuntingScreenModel: vi.fn(() => mockModel),
 }));
 
@@ -82,18 +104,18 @@ const mockPlayerControllerInstance = {
     shoot: vi.fn(() => mockBulletControllerInstance), // Returns a mock bullet when shooting
     stopAllSounds: vi.fn(),
 };
-vi.mock('../../components/Player/PlayerController', () => ({
+vi.mock('../src/components/Player/PlayerController', () => ({
     PlayerController: vi.fn(() => mockPlayerControllerInstance),
 }));
 
 // Mock other game controllers
-vi.mock('../../components/Obstacle/ObstacleController', () => ({
+vi.mock('../src/components/Obstacle/ObstacleController', () => ({
     ObstacleController: vi.fn((x, y, w, h, type) => ({
         getNode: vi.fn(() => mockKonvaNode),
     })),
 }));
 // Mock EmuController to prevent Konva initialization
-vi.mock('../../components/Emu/EmuController', () => ({
+vi.mock('../src/components/Emu/EmuController', () => ({
     EmuController: vi.fn((x, y) => ({
         getGroup: vi.fn(() => mockKonvaNode),
         update: vi.fn(),
@@ -101,12 +123,12 @@ vi.mock('../../components/Emu/EmuController', () => ({
         checkBulletCollision: vi.fn(() => false),
     })),
 }));
-vi.mock('../../components/Bullet/BulletController', () => ({
+vi.mock('../src/components/Bullet/BulletController', () => ({
     BulletController: vi.fn(() => mockBulletControllerInstance),
 }));
 
 // Mock utility functions
-vi.mock('../../utils/getSafeSpawnPosition', () => ({
+vi.mock('../src/utils/getSafeSpawnPosition', () => ({
     getSafeSpawnPosition: vi.fn(() => ({ x: 100, y: 200 })),
 }));
 
