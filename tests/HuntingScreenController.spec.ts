@@ -57,6 +57,17 @@ const mockPlayerController = {
   stopAllSounds: vi.fn(),
 };
 
+const mockObstacleController = {
+  getNode: vi.fn(() => mockKonvaNode),
+};
+
+const mockEmuController = {
+  getGroup: vi.fn(() => mockKonvaNode),
+  update: vi.fn(),
+  isActive: vi.fn(() => true),
+  checkBulletCollision: vi.fn(() => false),
+};
+
 // Set up mocks before importing the module
 vi.mock('../src/screens/HuntingScreen/HuntingScreenView', () => ({
   HuntingScreenView: vi.fn(() => mockView),
@@ -71,18 +82,11 @@ vi.mock('../src/components/Player/PlayerController', () => ({
 }));
 
 vi.mock('../src/components/Obstacle/ObstacleController', () => ({
-  ObstacleController: vi.fn(() => ({
-    getNode: vi.fn(() => mockKonvaNode),
-  })),
+  ObstacleController: vi.fn(() => mockObstacleController),
 }));
 
 vi.mock('../src/components/Emu/EmuController', () => ({
-  EmuController: vi.fn(() => ({
-    getGroup: vi.fn(() => mockKonvaNode),
-    update: vi.fn(),
-    isActive: vi.fn(() => true),
-    checkBulletCollision: vi.fn(() => false),
-  })),
+  EmuController: vi.fn(() => mockEmuController),
 }));
 
 vi.mock('../src/components/Bullet/BulletController', () => ({
@@ -93,17 +97,18 @@ vi.mock('../src/utils/getSafeSpawnPosition', () => ({
   getSafeSpawnPosition: vi.fn(() => ({ x: 100, y: 200 })),
 }));
 
-// Mock requestAnimationFrame
-global.requestAnimationFrame = vi.fn((cb) => {
-  setTimeout(cb, 0);
-  return 1;
-});
-
 describe('HuntingScreenController', () => {
   let controller: HuntingScreenController;
+  let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
+  let removeEventListenerSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Spy on window methods
+    addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+    removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+    
     controller = new HuntingScreenController(
       mockSwitcher as any,
       mockAudioManager as any
@@ -128,7 +133,15 @@ describe('HuntingScreenController', () => {
   describe('startHuntingGame', () => {
     beforeEach(() => {
       // Mock private methods
-      vi.spyOn(controller as any, 'resetGame').mockImplementation(() => {});
+      vi.spyOn(controller as any, 'resetGame').mockImplementation(() => {
+        // Set up minimal required properties
+        (controller as any).playerController = mockPlayerController;
+        (controller as any).obstacleControllers = [];
+        (controller as any).emuControllers = [mockEmuController];
+        (controller as any).bulletControllers = [];
+      });
+      
+      // Mock gameLoop to prevent infinite recursion
       vi.spyOn(controller as any, 'gameLoop').mockImplementation(() => {});
       
       controller.startHuntingGame();
@@ -143,58 +156,82 @@ describe('HuntingScreenController', () => {
 
     it('should update initial view state', () => {
       expect(mockView.updateAmmo).toHaveBeenCalledWith(100);
-      expect(mockView.updateDefeat).toHaveBeenCalledWith(0);
+      expect(mockView.updateDefeat).toHaveBeenCalledWith(1); // mockEmuController count
       expect(mockView.updateTimer).toHaveBeenCalledWith(60);
     });
 
     it('should attach keyboard listeners', () => {
-      expect(window.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
-      expect(window.addEventListener).toHaveBeenCalledWith('keyup', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith('keyup', expect.any(Function));
     });
   });
 
   describe('keyboard input', () => {
+    let onKeyDown: (e: KeyboardEvent) => void;
+    let onKeyUp: (e: KeyboardEvent) => void;
+
     beforeEach(() => {
-      // Initialize keys Set
+      // Get the bound event handlers
+      onKeyDown = (controller as any).onKeyDown.bind(controller);
+      onKeyUp = (controller as any).onKeyUp.bind(controller);
+      
+      // Initialize required properties
       (controller as any).keys = new Set();
       (controller as any).playerController = mockPlayerController;
       (controller as any).bulletControllers = [];
+      (controller as any).running = true;
     });
 
     it('should add key to keys set on keydown', () => {
       const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
-      (controller as any).onKeyDown(event);
+      onKeyDown(event);
       
       expect((controller as any).keys.has('ArrowRight')).toBe(true);
     });
 
     it('should remove key from keys set on keyup', () => {
       const addEvent = new KeyboardEvent('keydown', { key: 'ArrowRight' });
-      (controller as any).onKeyDown(addEvent);
+      onKeyDown(addEvent);
       
       const removeEvent = new KeyboardEvent('keyup', { key: 'ArrowRight' });
-      (controller as any).onKeyUp(removeEvent);
+      onKeyUp(removeEvent);
       
       expect((controller as any).keys.has('ArrowRight')).toBe(false);
     });
 
     it('should shoot when space is pressed and ammo is available', () => {
       const event = new KeyboardEvent('keydown', { code: 'Space' });
-      (controller as any).onKeyDown(event);
+      onKeyDown(event);
       
       expect(mockModel.canShoot).toHaveBeenCalled();
       expect(mockModel.consumeAmmo).toHaveBeenCalled();
       expect(mockPlayerController.shoot).toHaveBeenCalled();
       expect(mockAudioManager.playSfx).toHaveBeenCalledWith('shoot', 0.3);
     });
+
+    it('should NOT shoot when canShoot returns false', () => {
+      mockModel.canShoot.mockReturnValue(false);
+      const event = new KeyboardEvent('keydown', { code: 'Space' });
+      onKeyDown(event);
+      
+      expect(mockModel.consumeAmmo).not.toHaveBeenCalled();
+      expect(mockPlayerController.shoot).not.toHaveBeenCalled();
+      expect(mockAudioManager.playSfx).not.toHaveBeenCalled();
+    });
   });
 
   describe('game loop logic', () => {
     beforeEach(() => {
+      // Setup minimal required properties
       (controller as any).running = true;
-      (controller as any).emuControllers = [
-        { isActive: () => true, checkBulletCollision: () => false }
-      ];
+      (controller as any).playerController = mockPlayerController;
+      (controller as any).obstacleControllers = [];
+      (controller as any).emuControllers = [mockEmuController];
+      (controller as any).bulletControllers = [];
+      (controller as any).keys = new Set();
+      
+      // Mock batchDraw to prevent errors
+      mockView.batchDraw.mockImplementation(() => {});
     });
 
     it('should end game when ammo runs out', () => {
@@ -223,27 +260,55 @@ describe('HuntingScreenController', () => {
       
       expect((controller as any).endGame).toHaveBeenCalledWith('victory');
     });
+
+    it('should update components during game loop', () => {
+      (controller as any).gameLoop();
+      
+      expect(mockModel.updateTimer).toHaveBeenCalled();
+      expect(mockView.updateTimer).toHaveBeenCalledWith(60);
+      expect(mockView.updateAmmo).toHaveBeenCalledWith(100);
+      expect(mockPlayerController.update).toHaveBeenCalled();
+      expect(mockEmuController.update).toHaveBeenCalled();
+    });
   });
 
   describe('endGame', () => {
     beforeEach(() => {
+      // Setup state
       (controller as any).running = true;
       (controller as any).playerController = mockPlayerController;
       (controller as any).keys = new Set(['ArrowRight']);
+      
+      // Mock event listeners
+      (controller as any).onKeyDown = vi.fn();
+      (controller as any).onKeyUp = vi.fn();
     });
 
-    it('should cleanup and switch screen', () => {
+    it('should cleanup and switch screen on victory', () => {
       controller.endGame('victory');
       
       expect((controller as any).running).toBe(false);
       expect((controller as any).keys.size).toBe(0);
       expect(mockModel.stopTimer).toHaveBeenCalled();
       expect(mockPlayerController.stopAllSounds).toHaveBeenCalled();
-      expect(window.removeEventListener).toHaveBeenCalled();
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', (controller as any).onKeyDown);
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('keyup', (controller as any).onKeyUp);
       expect(mockSwitcher.switchToScreen).toHaveBeenCalledWith({
         type: 'minigame2_end',
         emusKilled: 0,
         reason: 'victory',
+      });
+    });
+
+    it('should handle different end game reasons', () => {
+      mockModel.getDefeat.mockReturnValue(5);
+      
+      controller.endGame('ammo');
+      
+      expect(mockSwitcher.switchToScreen).toHaveBeenCalledWith({
+        type: 'minigame2_end',
+        emusKilled: 5,
+        reason: 'ammo',
       });
     });
   });
