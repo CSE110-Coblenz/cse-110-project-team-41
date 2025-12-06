@@ -16,12 +16,12 @@ describe("GameStatusController", () => {
 		// Calculate the expected value based on the dynamic starting money
 		expect(status.getMoney()).toBe(STARTING_MONEY + ADD_AMOUNT_1); // STARTING_MONEY + 50
 
-		const SPEND_AMOUNT_1 = 30;
+		const SPEND_AMOUNT_1 = ADD_AMOUNT_1 -20;
 		expect(status.spend(SPEND_AMOUNT_1)).toBe(true);
 		// Calculate the expected value
-		expect(status.getMoney()).toBe(STARTING_MONEY + ADD_AMOUNT_1 - SPEND_AMOUNT_1); // STARTING_MONEY + 20
+		expect(status.getMoney()).toBe(STARTING_MONEY + ADD_AMOUNT_1 - SPEND_AMOUNT_1); 
 
-		const SPEND_AMOUNT_2 = 65; // This amount is expected to fail
+		const SPEND_AMOUNT_2 = STARTING_MONEY + ADD_AMOUNT_1; // This amount is expected to fail
 		// The money should not change after a failed spend
 		const CURRENT_MONEY = status.getMoney();
 		expect(status.spend(SPEND_AMOUNT_2)).toBe(false);
