@@ -10,6 +10,7 @@ import { BulletController } from "../../components/Bullet/BulletController";
 import { STAGE_WIDTH, STAGE_HEIGHT, GAME_AREA_HEIGHT, GAME_AREA_Y } from "../../constants";
 import { getSafeSpawnPosition } from "../../utils/getSafeSpawnPosition";
 import { AudioManager } from "../../services/AudioManager";
+import { GameStatusController } from "../../controllers/GameStatusController";
 
 export class HuntingScreenController extends ScreenController {
   private model: HuntingScreenModel;
@@ -17,6 +18,7 @@ export class HuntingScreenController extends ScreenController {
   private screenSwitcher: ScreenSwitcher;
   private running = false;
   private audioManager : AudioManager;
+  private status: GameStatusController ;
 
   // controllers & models
   private playerController!: PlayerController;
@@ -26,12 +28,13 @@ export class HuntingScreenController extends ScreenController {
 
   private keys: Set<string> = new Set();
 
-  constructor(screenSwitcher: ScreenSwitcher, audioManager: AudioManager) {
+  constructor(screenSwitcher: ScreenSwitcher, audioManager: AudioManager, status: GameStatusController ) {
     super();
     this.screenSwitcher = screenSwitcher;
     this.model = new HuntingScreenModel();
     this.view = new HuntingScreenView();
     this.audioManager = audioManager;
+    this.status = status;
   }
 
   getView(): HuntingScreenView {
@@ -198,6 +201,7 @@ export class HuntingScreenController extends ScreenController {
     }
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
+    this.status.incrementScore(this.model.getDefeat() * 1);
     this.screenSwitcher.switchToScreen({
       type: "minigame2_end",
       emusKilled: this.model.getDefeat(),

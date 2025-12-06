@@ -42,7 +42,7 @@ class App implements ScreenSwitcher {
 		this.gameStatusController = new GameStatusController();
 		this.audioManager = new AudioManager();
 		this.menuController = new MainMenuScreenController(this);
-		this.huntingController = new HuntingScreenController(this, this.audioManager);
+		this.huntingController = new HuntingScreenController(this, this.audioManager, this.gameStatusController);
 		this.huntingIntroController = new HuntingIntroScreenController(this);
 		this.huntingEndController = new HuntingEndScreenController(this);
 		this.farmController = new FarmScreenController(this, this.gameStatusController, this.audioManager);
@@ -99,7 +99,7 @@ class App implements ScreenSwitcher {
 			case "farm":
 				// Start the game (which also shows the game screen)
 				this.audioManager.playBgm("farm");
-				this.farmController.startGame();
+				this.farmController.startGame(screen.newgame);
 				// startGame() will call startRound() or show planning phase
 				break;
 

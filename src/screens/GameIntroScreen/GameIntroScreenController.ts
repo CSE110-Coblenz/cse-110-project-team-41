@@ -80,7 +80,7 @@ export class GameIntroController {
 
   private completeIntro(): void {
     // Use screenSwitcher to move to the next screen
-    this.screenSwitcher.switchToScreen({ type: "farm" });
+    this.screenSwitcher.switchToScreen({ type: "farm", newgame:true });
   }
 
 
