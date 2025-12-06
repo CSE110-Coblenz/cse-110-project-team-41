@@ -69,7 +69,7 @@ describe("GameIntroController", () => {
         const spaceEvent = new KeyboardEvent("keydown", { code: "Space" });
         window.dispatchEvent(spaceEvent);
 
-        expect(screenSwitcherMock.switchToScreen).toHaveBeenCalledWith({ type: "farm" });
+        expect(screenSwitcherMock.switchToScreen).toHaveBeenCalledWith({ type: "farm","newgame": true });
     });
 
     it("should switch to farm screen immediately when Escape is pressed", () => {
@@ -78,7 +78,7 @@ describe("GameIntroController", () => {
         const escapeEvent = new KeyboardEvent("keydown", { code: "Escape" });
         window.dispatchEvent(escapeEvent);
 
-        expect(screenSwitcherMock.switchToScreen).toHaveBeenCalledWith({ type: "farm" });
+        expect(screenSwitcherMock.switchToScreen).toHaveBeenCalledWith({ type: "farm","newgame": true, });
     });
 
     it("should clean up event listeners on hide", () => {
