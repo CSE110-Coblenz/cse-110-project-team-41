@@ -17,7 +17,7 @@ export interface View {
 export type Screen =
 	| { type: "main_menu" }
 	| { type: "game_intro" }
-	| { type: "farm" }
+	| { type: "farm"; newgame:boolean }
 	| { type: "minigame2_intro" }
 	| { type: "minigame2" }
 	| { type: "minigame2_end"; emusKilled: number; reason: "ammo" | "time" | "victory" }

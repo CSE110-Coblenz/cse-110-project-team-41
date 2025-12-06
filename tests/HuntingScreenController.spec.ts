@@ -4,7 +4,10 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 // Mock all dependencies
 const mockSwitcher = { switchToScreen: vi.fn() };
 const mockAudioManager = { playSfx: vi.fn(), stopSfx: vi.fn() };
-
+// Mock GameStatusController
+const mockGameStatusController = {
+  incrementScore: vi.fn(),
+};
 // Mock Konva nodes
 const mockKonvaNode = {
   add: vi.fn(),
@@ -111,7 +114,8 @@ describe('HuntingScreenController', () => {
     
     controller = new HuntingScreenController(
       mockSwitcher as any,
-      mockAudioManager as any
+      mockAudioManager as any,
+      mockGameStatusController as any
     );
   });
 

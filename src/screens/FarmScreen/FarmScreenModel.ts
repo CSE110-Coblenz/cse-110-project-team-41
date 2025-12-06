@@ -4,7 +4,6 @@ import { GameStatusController } from "../../controllers/GameStatusController";
  * GameScreenModel - Manages game state
  */
 export class FarmScreenModel {
-	private score = 0;
 	private spawnNum = 20;
 	private status: GameStatusController;
 
@@ -16,22 +15,7 @@ export class FarmScreenModel {
 	 * Reset game state for a new game
 	 */
 	reset(): void {
-		this.score = 0;
 		this.spawnNum = 2;
-	}
-
-	/**
-	 * Increment score when a crop is harvested
-	 */
-	incrementScore(): void {
-		this.score++;
-	}
-
-	/**
-	 * Get current score
-	 */
-	getScore(): number {
-		return this.score;
 	}
 
 
@@ -39,7 +23,7 @@ export class FarmScreenModel {
 	 * Increases the amount of Emus to spawn
 	*/
 	updateSpawn(): void {
-		this.spawnNum = Math.ceil(this.status.getDay() * 1.3);
+		this.spawnNum = Math.ceil(this.status.getDay() * 2);
 	}
 
 	/**

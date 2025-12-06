@@ -36,27 +36,31 @@ class FakeFarmScreenView {
     draw: vi.fn(),
   }));
   getMousePosition = vi.fn(() => ({ x: 100, y: 100 }));
+  // Add missing method
+  setStartRoundHandler = vi.fn();
 
   constructor(
     _handleKeydown: (event: KeyboardEvent) => void,
-    _handleStartDay: () => void,
-    _handleEndGame: () => void,
+    _handleEndGame: () => void,  // Changed from handleStartDay to handleEndGame
     _registerEmu: (emu: FarmEmuController) => void,
     _removeEmus: () => void,
     registerPlanter: (planter: FarmPlanterController) => void,
   ) {
-    const planterTarget = { id: "planter" };
-    const planter = {
-      setOnHarvest: vi.fn(),
-      advanceDay: vi.fn(),
-      getView: vi.fn(() => planterTarget),
-      setStatus: vi.fn(),
-      setOnPlant: vi.fn(),
-      isEmpty: vi.fn(() => false),
-      takeDamage: vi.fn(() => false),
-      destroyCrop: vi.fn(),
-    };
-    registerPlanter(planter as unknown as FarmPlanterController);
+    // This should be called if registerPlanter is a function
+    if (typeof registerPlanter === 'function') {
+      const planterTarget = { id: "planter" };
+      const planter = {
+        setOnHarvest: vi.fn(),
+        advanceDay: vi.fn(),
+        getView: vi.fn(() => planterTarget),
+        setStatus: vi.fn(),
+        setOnPlant: vi.fn(),
+        isEmpty: vi.fn(() => false),
+        takeDamage: vi.fn(() => false),
+        destroyCrop: vi.fn(),
+      };
+      registerPlanter(planter as unknown as FarmPlanterController);
+    }
   }
 
   updateScore = vi.fn();
@@ -96,16 +100,14 @@ let latestView: FakeFarmScreenView | null = null;
 vi.mock("../src/screens/FarmScreen/FarmScreenView.ts", () => ({
   FarmScreenView: vi.fn((
     handleKeydown: (event: KeyboardEvent) => void,
-    handleStartDay: () => void,
-    handleEndGame: () => void,
+    handleEndGame: () => void,  // Changed from handleStartDay to handleEndGame
     registerEmu: (emu: FarmEmuController) => void,
     removeEmus: () => void,
     registerPlanter: (planter: FarmPlanterController) => void,
   ) => {
     latestView = new FakeFarmScreenView(
       handleKeydown, 
-      handleStartDay, 
-      handleEndGame, 
+      handleEndGame,  // Changed from handleStartDay to handleEndGame
       registerEmu, 
       removeEmus, 
       registerPlanter
@@ -128,6 +130,7 @@ vi.mock("../src/screens/PlanningPhaseScreen/PlanningPhaseController.ts", () => (
     setOnStartRound: vi.fn(),
     deselectAll: vi.fn(),
     clearSelection: vi.fn(),
+    setOnPlaceDefenses: vi.fn(),  // Added missing method
   })),
 }));
 

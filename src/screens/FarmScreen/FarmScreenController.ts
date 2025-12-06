@@ -124,28 +124,30 @@ export class FarmScreenController extends ScreenController {
 	/**
 	 * Start the game
 	 */
-	startGame(): void {		
-		// Reset model state
-		this.model.reset();
-		this.timeRemaining = GAME_DURATION;
-		this.defenses = [];
-		this.view.clearDefenses();
-		this.emus = [];
-		this.view.clearEmus();
-		this.selectedDefenseType = null;
-		this.isPlanningPhase = false;
-		this.isDefensePlacementMode = false;
+	startGame(newgame: boolean): void {	
+		if (newgame) {	
+			// Reset model state
+			this.status.reset();
+			this.model.reset();
+			this.timeRemaining = GAME_DURATION;
+			this.defenses = [];
+			this.view.clearDefenses();
+			this.emus = [];
+			this.view.clearEmus();
+			this.selectedDefenseType = null;
+			this.isPlanningPhase = false;
+			this.isDefensePlacementMode = false;
 
-		// Reset all planters to empty state
-		this.planters.forEach((planter) => {
-			// Reset planter to empty if it has a crop
-			if (!planter.isEmpty()) {
-				planter.destroyCrop();
-			}
-		});
-
+			// Reset all planters to empty state
+			this.planters.forEach((planter) => {
+				// Reset planter to empty if it has a crop
+				if (!planter.isEmpty()) {
+					planter.destroyCrop();
+				}
+			});
+		}
 		// Update view
-		this.view.updateScore(this.model.getScore());
+		this.view.updateScore(this.status.getFinalScore());
 		this.view.hideMenuOverlay();
 		this.resetMines();
 		this.view.updateTimer(this.timeRemaining);
@@ -319,7 +321,7 @@ export class FarmScreenController extends ScreenController {
 		this.selectedDefenseType = null;
 		this.view.setPlacementCursor(false);
 		this.view.setPlacementHint();
-		this.view.updateScore(this.model.getScore());
+		this.view.updateScore(this.status.getFinalScore());
 		this.updateCropDisplay();
 		this.timeRemaining = GAME_DURATION;
 		this.view.updateTimer(this.timeRemaining);
@@ -387,6 +389,8 @@ export class FarmScreenController extends ScreenController {
         this.stopTimer();
         this.view.clearEmus();
         this.status.endDay();
+		this.status.incrementScore(10);
+		this.view.updateScore(this.status.getFinalScore());
         const newDay = this.status.getDay();
         this.morning?.setDisplayDayOverride(newDay);
         this.handleOpenMarket(() => this.prepareNextRound());
@@ -401,8 +405,6 @@ export class FarmScreenController extends ScreenController {
 		this.updateCropDisplay();
 
 		this.assignTargetsToAllEmus();
-
-		this.startRound();
 	}
 
 	private registerEmu(emu: FarmEmuController): void {
@@ -424,6 +426,8 @@ export class FarmScreenController extends ScreenController {
 		planter.setStatus(this.status);
 		planter.setOnHarvest(() => {
 			this.status.addToInventory(GameItem.Crop, 1);
+			this.status.incrementScore(50);
+			this.view.updateScore(this.status.getFinalScore());
 			this.audio.playSfx("harvest");
 			this.updateCropDisplay();
 		});
@@ -814,7 +818,7 @@ export class FarmScreenController extends ScreenController {
 	 * Get final score
 	 */
 	getFinalScore(): number {
-		return this.model.getScore();
+		return this.status.getFinalScore();
 	}
 
 	/**

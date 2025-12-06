@@ -6,6 +6,7 @@ type PersistedState = {
     day: number;
     inventory: Inventory;
     emuCount: number;
+    score: number;
 };
 
 const STORAGE_KEY = "game:status";
@@ -18,6 +19,7 @@ export class GameStatusController {
     private emuCount!: number;
     private day!: number;
     private inventory!: Inventory;
+    private score!: number;
 
     constructor() {
         const saved = this.load();
@@ -25,6 +27,7 @@ export class GameStatusController {
             this.day = saved.day;
             this.inventory = saved.inventory;
             this.emuCount = saved.emuCount;
+            this.score = saved.score;
         } else {
             this.reset();
         }
@@ -36,6 +39,7 @@ export class GameStatusController {
             day: this.day,
             inventory: this.inventory,
             emuCount: this.emuCount,
+            score: this.score,
         };
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
     }
@@ -103,11 +107,16 @@ export class GameStatusController {
         return true;
     }
 
+    incrementScore(score: number = 1): void {
+        this.score += score;
+        this.save();
+    }
+
     /**
      * Get final score (use days survived for now)
      */
     getFinalScore(): number {
-        return this.day;
+        return this.score;
     }
 
     /**
@@ -139,8 +148,9 @@ export class GameStatusController {
 	 */
 	reset(): void {
 		this.day = 1;
+        this.score = 0;
 		this.inventory = {
-			[GameItem.Money]: 40,        // Starting money
+			[GameItem.Money]: 100,        // Starting money
 			[GameItem.Crop]: 0,
 			[GameItem.Mine]: 0,
 			[GameItem.Egg]: 0,

@@ -133,7 +133,7 @@ export class MorningEventsScreenController extends ScreenController {
         }
 
         // Begin the next day by returning to the farm
-        this.screenSwitcher.switchToScreen({ type: "farm" });
+        this.screenSwitcher.switchToScreen({ type: "farm" , newgame: false});
     }
 
     private handleOpenQuiz(): void {

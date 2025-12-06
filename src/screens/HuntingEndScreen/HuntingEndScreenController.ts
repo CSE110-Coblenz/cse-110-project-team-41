@@ -24,7 +24,7 @@ export class HuntingEndScreenController extends ScreenController {
   private handleContinueClick(): void {
     // Return to main menu or farm screen
     // You can change this to go back to farm or wherever appropriate
-    this.screenSwitcher.switchToScreen({ type: "farm" });
+    this.screenSwitcher.switchToScreen({ type: "farm" , newgame:false});
   }
 }
 
