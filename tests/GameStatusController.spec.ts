@@ -27,10 +27,10 @@ describe("GameStatusController", () => {
 		expect(status.spend(SPEND_AMOUNT_2)).toBe(false);
 		expect(status.getMoney()).toBe(CURRENT_MONEY);
 
-		const ADD_AMOUNT_2 = -100;
+		const ADD_AMOUNT_2 = -CURRENT_MONEY-100;
 		status.addMoney(ADD_AMOUNT_2);
 		// Inventory helpers ensure money floors at 0 when adding a negative amount that exceeds the current total
-		expect(status.getMoney()).toBe(CURRENT_MONEY);
+		expect(status.getMoney()).toBe(0);
 	});
 
 	it("manages inventory counts", () => {
