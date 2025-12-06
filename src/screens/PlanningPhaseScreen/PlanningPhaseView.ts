@@ -18,15 +18,15 @@ export class PlanningPhaseView implements View {
 	private tooltip: Konva.Group | null = null;
 	private selectedDefenseType: DefenseType | null = null;
 	private defenseButtons: Partial<Record<DefenseType, Konva.Group>> = {};
-	private onStartRound: (() => void) | null = null;
+	private onPlaceDefenses: (() => void) | null = null;
 	private onDefenseSelected: ((type: DefenseType | null) => void) | null = null;
 
 	constructor() {
-		this.group = new Konva.Group({ visible: false });
-		this.overlay = new Konva.Group();
-		this.tutorialPanel = new Konva.Group();
-		this.defenseSelectionPanel = new Konva.Group();
-		this.startButton = new Konva.Group();
+		this.group = new Konva.Group({ visible: false, listening: true });
+		this.overlay = new Konva.Group({ listening: true });
+		this.tutorialPanel = new Konva.Group({ listening: true });
+		this.defenseSelectionPanel = new Konva.Group({ listening: true });
+		this.startButton = new Konva.Group({ listening: true });
 
 		this.createOverlay();
 		this.createTutorialPanel();
@@ -152,6 +152,7 @@ export class PlanningPhaseView implements View {
 				x: buttonX,
 				y: buttonY,
 				cursor: "pointer",
+				listening: true,
 			});
 
 			const bg = new Konva.Rect({
@@ -161,6 +162,7 @@ export class PlanningPhaseView implements View {
 				stroke: "#95a5a6",
 				strokeWidth: 2,
 				cornerRadius: 5,
+				listening: true,
 			});
 			button.add(bg);
 
@@ -278,7 +280,7 @@ export class PlanningPhaseView implements View {
 			x: 0,
 			y: buttonHeight / 2 - 12,
 			width: buttonWidth,
-			text: "Start Round",
+			text: "Place Defenses",
 			fontSize: 24,
 			fontFamily: "Arial",
 			fill: "#ecf0f1",
@@ -288,14 +290,14 @@ export class PlanningPhaseView implements View {
 		button.add(text);
 
 		button.on("click", () => {
-			this.onStartRound?.();
+			this.onPlaceDefenses?.();
 		});
 
 		this.startButton.add(button);
 	}
 
-	setOnStartRound(handler: () => void): void {
-		this.onStartRound = handler;
+	setOnPlaceDefenses(handler: () => void): void {
+		this.onPlaceDefenses = handler;
 	}
 
 	setOnDefenseSelected(handler: (type: DefenseType | null) => void): void {

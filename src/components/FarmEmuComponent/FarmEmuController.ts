@@ -19,6 +19,8 @@ export class FarmEmuController {
 
 	private targetX: number | null = null;
 	private targetY: number | null = null;
+	private speedModifier: number = 1.0;
+	private isBlocked: boolean = false;
 
 	private active: boolean;
 
@@ -51,9 +53,16 @@ export class FarmEmuController {
 			return;
 		}
 
+		if (this.isBlocked) {
+			requestAnimationFrame(this.gameLoop);
+			return;
+		}
+
+		const currentSpeed = EMU_SPEED * this.speedModifier;
+
 		if (!this.targetX || !this.targetY) {
 			if (this.randomMoveCountdown > 0) {
-				this.view.moveDelta(this.randomMove[0] * EMU_SPEED * deltaTime, this.randomMove[1] * EMU_SPEED * deltaTime);
+				this.view.moveDelta(this.randomMove[0] * currentSpeed * deltaTime, this.randomMove[1] * currentSpeed * deltaTime);
 				this.randomMoveCountdown--;
 				requestAnimationFrame(this.gameLoop);
 			} else {
@@ -66,12 +75,12 @@ export class FarmEmuController {
 		}
 
 		if (this.randomMoveCountdown > 0) {
-			this.view.moveDelta(this.randomMove[0] * EMU_SPEED * deltaTime, this.randomMove[1] * EMU_SPEED * deltaTime);
+			this.view.moveDelta(this.randomMove[0] * currentSpeed * deltaTime, this.randomMove[1] * currentSpeed * deltaTime);
 			this.randomMoveCountdown--;
 			requestAnimationFrame(this.gameLoop);
 			return;
 		} else {
-			if (Math.random() < EMU_WALK_RANDOMIZATION) { //EMU_WALK_RANDOMIZATION
+			if (Math.random() < EMU_WALK_RANDOMIZATION) {
 				this.randomMoveCountdown = 30;
 				const randomDir = [[0, 1], [1, 0], [1, 1]][Math.floor(Math.random() * 3)] as [number, number];
 				this.randomMove = [randomDir[0] * (Math.random() < 0.5 ? -1 : 1), randomDir[1] * (Math.random() < 0.5 ? -1 : 1)];
@@ -79,15 +88,15 @@ export class FarmEmuController {
 		}
 
 		if (emu.x() > this.targetX) {
-			this.view.moveDelta(- EMU_SPEED * deltaTime, 0);
+			this.view.moveDelta(- currentSpeed * deltaTime, 0);
 		} else {
-			this.view.moveDelta(EMU_SPEED * deltaTime, 0);
+			this.view.moveDelta(currentSpeed * deltaTime, 0);
 		}
 
 		if (emu.y() > this.targetY) {
-			this.view.moveDelta(0, - EMU_SPEED * deltaTime);
+			this.view.moveDelta(0, - currentSpeed * deltaTime);
 		} else {
-			this.view.moveDelta(0, EMU_SPEED * deltaTime);
+			this.view.moveDelta(0, currentSpeed * deltaTime);
 		}
 
 		// Request the next frame
@@ -129,5 +138,17 @@ export class FarmEmuController {
 
 	getId(): number {
 		return this.id;
+	}
+
+	setSpeedModifier(modifier: number): void {
+		this.speedModifier = modifier;
+	}
+
+	setBlocked(blocked: boolean): void {
+		this.isBlocked = blocked;
+	}
+
+	isBlockedByDefense(): boolean {
+		return this.isBlocked;
 	}
 }

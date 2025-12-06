@@ -46,6 +46,7 @@ export class FarmScreenView implements View {
 	private onDefensePlaceClick: ((x: number, y: number) => void) | null = null;
 	private menuSaveHandler: (() => void) | null = null;
 	private menuBackHandler: (() => void) | null = null;
+	private startRoundHandler: (() => void) | null = null;
 	//Event handlers for skip/continue functionality for hunt/egg minigames:
 	private huntContinueHandler: (() => void) | null = null;
 	private huntSkipHandler: (() => void) | null = null;
@@ -62,7 +63,6 @@ export class FarmScreenView implements View {
 
 	constructor(
 		handleKeydown: (event: KeyboardEvent) => void,
-		endRound: () => void,
 		handleEndGame: () => void,
 		registerEmu: (emu: FarmEmuController) => void,
 		removeEmus: () => void,
@@ -233,7 +233,9 @@ export class FarmScreenView implements View {
 			listening: true,
 		});
 		// Attach event to the GROUP so background doesn't block clicks
-		startDayGroup.on("click", endRound);
+		startDayGroup.on("click", () => {
+			this.startRoundHandler?.();
+		});
 		startDayGroup.add(startDayBackground);
 		startDayGroup.add(startDayButton);
 		this.hudGroup.add(startDayGroup);
@@ -586,6 +588,10 @@ export class FarmScreenView implements View {
 	setMenuOptionHandlers(onExit: () => void, onBack: () => void): void {
 		this.menuSaveHandler = onExit;
 		this.menuBackHandler = onBack;
+	}
+
+	setStartRoundHandler(handler: () => void): void {
+		this.startRoundHandler = handler;
 	}
 
 	//For hunting minigame:

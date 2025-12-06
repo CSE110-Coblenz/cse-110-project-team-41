@@ -16,8 +16,8 @@ export class PlanningPhaseController {
 		return this.view;
 	}
 
-	setOnStartRound(handler: () => void): void {
-		this.view.setOnStartRound(handler);
+	setOnPlaceDefenses(handler: () => void): void {
+		this.view.setOnPlaceDefenses(handler);
 	}
 
 	setOnDefenseSelected(handler: (type: DefenseType | null) => void): void {

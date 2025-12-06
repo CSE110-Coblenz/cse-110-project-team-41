@@ -47,6 +47,7 @@ export class FarmScreenController extends ScreenController {
 	private screenSwitcher: ScreenSwitcher;
 	private defenses: DefenseController[] = [];
 	private isPlanningPhase: boolean = false;
+	private isDefensePlacementMode: boolean = false;
 	private selectedDefenseType: DefenseType | null = null;
 	private readonly planningHint = "Select a defense, then press T to place it at the cursor.";
 
@@ -63,7 +64,6 @@ export class FarmScreenController extends ScreenController {
 		this.model = new FarmScreenModel(this.status);
 		this.view = new FarmScreenView(
 			(event: KeyboardEvent) => this.handleKeydown(event),
-			() => this.endRound(),
 			() => this.handleEndGame(),
 			(emu: FarmEmuController) => this.registerEmu(emu),
 			() => this.removeEmus(),
@@ -71,13 +71,14 @@ export class FarmScreenController extends ScreenController {
 		);
 		this.view.setMenuButtonHandler(() => this.handleMenuButton());
 		this.view.setMenuOptionHandlers(
-			() => this.handleMenuExit(),
+			() => this.handleMenuSaveAndExit(),
 			() => this.handleMenuResume(),
 		);
+		this.view.setStartRoundHandler(() => this.startRound());
 
 		// Initialize planning phase
 		this.planningPhase = new PlanningPhaseController();
-		this.planningPhase.setOnStartRound(() => this.handleStartRound());
+		this.planningPhase.setOnPlaceDefenses(() => this.handlePlaceDefenses());
 		this.planningPhase.setOnDefenseSelected((type) => {
 			this.handleDefenseSelection(type);
 		});
@@ -133,6 +134,7 @@ export class FarmScreenController extends ScreenController {
 		this.view.clearEmus();
 		this.selectedDefenseType = null;
 		this.isPlanningPhase = false;
+		this.isDefensePlacementMode = false;
 
 		// Reset all planters to empty state
 		this.planters.forEach((planter) => {
@@ -168,6 +170,7 @@ export class FarmScreenController extends ScreenController {
 
 	private showPlanningPhase(): void {
 		this.isPlanningPhase = true;
+		this.isDefensePlacementMode = false;
 		this.stopTimer();
 		this.view.setPlanningPhaseMode(true);
 		this.view.setPlacementCursor(false);
@@ -181,20 +184,24 @@ export class FarmScreenController extends ScreenController {
 		}
 	}
 
-	private handleStartRound(): void {
+	private handlePlaceDefenses(): void {
 		this.isPlanningPhase = false;
+		this.isDefensePlacementMode = true;
 		this.view.setPlanningPhaseMode(false);
-		this.view.setPlacementCursor(false);
-		this.view.setPlacementHint();
-		this.selectedDefenseType = null;
 		if (this.planningPhase) {
 			this.planningPhase.hide();
 		}
-		this.startRound();
+		if (this.selectedDefenseType) {
+			this.view.setPlacementCursor(true);
+			this.view.setPlacementHint(`Press T to place ${this.formatDefenseName(this.selectedDefenseType)} at the cursor.`);
+		} else {
+			this.view.setPlacementCursor(false);
+			this.view.setPlacementHint();
+		}
 	}
 
 	private handleDefensePlaceClick(x: number, y: number): void {
-		if (!this.isPlanningPhase || !this.selectedDefenseType) {
+		if ((!this.isPlanningPhase && !this.isDefensePlacementMode) || !this.selectedDefenseType) {
 			return;
 		}
 		if (this.placeDefenseAt(this.selectedDefenseType, x - 15, y - 15)) {
@@ -217,20 +224,12 @@ export class FarmScreenController extends ScreenController {
 		}
 
 		this.selectedDefenseType = type;
-
-		if (type) {
-			this.planningPhase?.hide();
-			this.view.setPlacementCursor(true);
-			this.view.setPlacementHint(`Press T to place ${this.formatDefenseName(type)} at the cursor.`);
-		} else {
-			this.view.setPlacementCursor(false);
-			this.view.setPlacementHint(this.planningHint);
-			this.planningPhase?.show();
-		}
+		this.view.setPlacementCursor(false);
+		this.view.setPlacementHint(this.planningHint);
 	}
 
 	private attemptDefensePlacementAtCursor(): void {
-		if (!this.isPlanningPhase || !this.selectedDefenseType) {
+		if ((!this.isPlanningPhase && !this.isDefensePlacementMode) || !this.selectedDefenseType) {
 			return;
 		}
 		const pointer = this.view.getMousePosition();
@@ -243,15 +242,19 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private cancelDefensePlacement(): void {
-		if (!this.isPlanningPhase || !this.selectedDefenseType) {
+		if ((!this.isPlanningPhase && !this.isDefensePlacementMode) || !this.selectedDefenseType) {
 			return;
 		}
 		this.selectedDefenseType = null;
 		this.view.setPlacementCursor(false);
-		this.view.setPlacementHint(this.planningHint);
-		if (this.planningPhase) {
-			this.planningPhase.clearSelection();
-			this.planningPhase.show();
+		if (this.isPlanningPhase) {
+			this.view.setPlacementHint(this.planningHint);
+			if (this.planningPhase) {
+				this.planningPhase.clearSelection();
+				this.planningPhase.show();
+			}
+		} else {
+			this.view.setPlacementHint();
 		}
 	}
 
@@ -280,12 +283,19 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private onDefensePlacedDuringPlanning(): void {
-		this.selectedDefenseType = null;
-		this.view.setPlacementCursor(false);
-		this.view.setPlacementHint(this.planningHint);
-		if (this.planningPhase && this.isPlanningPhase) {
-			this.planningPhase.clearSelection();
-			this.planningPhase.show();
+		if (this.isDefensePlacementMode && this.selectedDefenseType) {
+			const item = defenseTypeToGameItem(this.selectedDefenseType);
+			if (this.status.getItemCount(item) <= 0) {
+				this.selectedDefenseType = null;
+				this.view.setPlacementCursor(false);
+				this.view.setPlacementHint("No more defenses of this type. Select another defense.");
+			} else {
+				this.view.setPlacementHint(`Press T to place ${this.formatDefenseName(this.selectedDefenseType)} at the cursor.`);
+			}
+		} else {
+			this.selectedDefenseType = null;
+			this.view.setPlacementCursor(false);
+			this.view.setPlacementHint(this.planningHint);
 		}
 	}
 
@@ -305,7 +315,10 @@ export class FarmScreenController extends ScreenController {
 	 * Start the round
 	 */
 	startRound(): void {
-		// Update view
+		this.isDefensePlacementMode = false;
+		this.selectedDefenseType = null;
+		this.view.setPlacementCursor(false);
+		this.view.setPlacementHint();
 		this.view.updateScore(this.model.getScore());
 		this.updateCropDisplay();
 		this.timeRemaining = GAME_DURATION;
@@ -540,10 +553,6 @@ export class FarmScreenController extends ScreenController {
 		this.view.showMenuOverlay();
 	}
 
-	private handleMenuExit(): void {
-		this.view.hideMenuOverlay();
-		this.stopTimer();
-	}
 	//Handling options in the hunt menu:
 	private handleHuntCont(): void {
 		this.status.save();
@@ -567,10 +576,10 @@ export class FarmScreenController extends ScreenController {
 		this.view.hideEggMenuOverlay();
 	}
 
-	// private handleMenuSaveAndExit(): void {
-	// 	this.status.save();
-	// 	this.screenSwitcher.switchToScreen({ type: "main_menu" });
-	// }
+	private handleMenuSaveAndExit(): void {
+		this.status.reset();
+		this.screenSwitcher.switchToScreen({ type: "main_menu" });
+	}
 
 	private handleMenuResume(): void {
 		this.view.hideMenuOverlay();
@@ -695,14 +704,19 @@ export class FarmScreenController extends ScreenController {
 	}
 
 
-	private checkDefenseEmuInteractions(_deltaTime: number): void {
-		if (!this.defenses.length || !this.emus.length || this.isPlanningPhase) {
+	private checkDefenseEmuInteractions(deltaTime: number): void {
+		if (!this.defenses.length || !this.emus.length || this.isPlanningPhase || this.isDefensePlacementMode) {
 			return;
 		}
 
-		// Track active defenses (remove destroyed ones)
+		for (const emu of this.emus) {
+			emu.setSpeedModifier(1.0);
+			emu.setBlocked(false);
+		}
+
 		const activeDefenses: DefenseController[] = [];
 		const emusToRemove: FarmEmuController[] = [];
+		const machineGunCooldowns = new Map<DefenseController, number>();
 
 		for (const defense of this.defenses) {
 			if (!defense.isActive()) {
@@ -715,7 +729,48 @@ export class FarmScreenController extends ScreenController {
 
 			const defenseX = defenseView.x();
 			const defenseY = defenseView.y();
-			const defenseSize = 30; // Defense size
+			const defenseSize = 30;
+			const defenseType = defense.getType();
+
+			if (defenseType === "machine_gun") {
+				const lastShot = machineGunCooldowns.get(defense) || 0;
+				const cooldown = 0.5;
+				const canShoot = lastShot <= 0;
+
+				if (canShoot) {
+					let nearestEmu: FarmEmuController | null = null;
+					let nearestDistance = 100;
+
+					for (const emu of this.emus) {
+						const emuShape = emu.getView();
+						if (!emuShape) continue;
+
+						const emuX = emuShape.x();
+						const emuY = emuShape.y();
+						const dx = emuX - defenseX;
+						const dy = emuY - defenseY;
+						const distance = Math.sqrt(dx * dx + dy * dy);
+
+						if (distance < nearestDistance) {
+							nearestEmu = emu;
+							nearestDistance = distance;
+						}
+					}
+
+					if (nearestEmu && nearestDistance <= 100) {
+						nearestEmu.remove();
+						emusToRemove.push(nearestEmu);
+						defense.takeDamage(1);
+						machineGunCooldowns.set(defense, cooldown);
+						if (!defense.isActive()) {
+							defense.remove();
+						}
+					}
+				} else {
+					machineGunCooldowns.set(defense, Math.max(0, lastShot - deltaTime));
+				}
+				continue;
+			}
 
 			for (const emu of this.emus) {
 				const emuShape = emu.getView();
@@ -726,7 +781,6 @@ export class FarmScreenController extends ScreenController {
 				const emuWidth = emuShape.width();
 				const emuHeight = emuShape.height();
 
-				// Check collision
 				const isColliding = (
 					emuX < defenseX + defenseSize &&
 					emuX + emuWidth > defenseX &&
@@ -736,44 +790,26 @@ export class FarmScreenController extends ScreenController {
 
 				if (!isColliding) continue;
 
-				const defenseType = defense.getType();
-
 				switch (defenseType) {
 					case "barbed_wire":
-						// Slows emus - handled by reducing movement in emu controller
-						// For now, we'll apply a speed reduction effect
-						// This is a simple implementation - emus will move slower when touching barbed wire
+						emu.setSpeedModifier(0.3);
 						break;
 
 					case "sandbag":
-						// Blocks emus - emu must destroy it
-						defense.takeDamage(1);
-						if (!defense.isActive()) {
-							// Sandbag destroyed
-							defense.remove();
-						}
-						// Emu is blocked (can't move past)
-						break;
-
-					case "machine_gun":
-						// Auto-shoots nearby emus
-						// Simple implementation: instant kill on contact
-						emu.remove();
-						emusToRemove.push(emu);
-						defense.takeDamage(1);
+						emu.setBlocked(true);
+						defense.takeDamage(1 * deltaTime);
 						if (!defense.isActive()) {
 							defense.remove();
+							emu.setBlocked(false);
 						}
 						break;
 
 					case "mine":
-						// Handled separately in checkMineCollisions
 						break;
 				}
 			}
 		}
 
-		// Remove destroyed emus
 		for (const emu of emusToRemove) {
 			const index = this.emus.indexOf(emu);
 			if (index > -1) {
@@ -781,7 +817,6 @@ export class FarmScreenController extends ScreenController {
 			}
 		}
 
-		// Update defenses list (remove destroyed ones)
 		this.defenses = activeDefenses.filter(d => d.isActive());
 	}
 
