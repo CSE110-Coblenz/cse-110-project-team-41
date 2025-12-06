@@ -716,12 +716,10 @@ export class FarmScreenController extends ScreenController {
 
 		const activeDefenses: DefenseController[] = [];
 		const emusToRemove: FarmEmuController[] = [];
-		const machineGunCooldowns = new Map<DefenseController, number>();
+		const gunCooldowns = new Map<DefenseController, number>();
 
 		for (const defense of this.defenses) {
-			if (!defense.isActive()) {
-				continue;
-			}
+			if (!defense.isActive()) continue;
 			activeDefenses.push(defense);
 
 			const defenseView = defense.getView();
@@ -733,41 +731,36 @@ export class FarmScreenController extends ScreenController {
 			const defenseType = defense.getType();
 
 			if (defenseType === "machine_gun") {
-				const lastShot = machineGunCooldowns.get(defense) || 0;
-				const cooldown = 0.5;
-				const canShoot = lastShot <= 0;
-
-				if (canShoot) {
-					let nearestEmu: FarmEmuController | null = null;
-					let nearestDistance = 100;
+				const lastShot = gunCooldowns.get(defense) || 0;
+				if (lastShot <= 0) {
+					let closestEmu: FarmEmuController | null = null;
+					let closestDist = 100;
 
 					for (const emu of this.emus) {
 						const emuShape = emu.getView();
 						if (!emuShape) continue;
 
-						const emuX = emuShape.x();
-						const emuY = emuShape.y();
-						const dx = emuX - defenseX;
-						const dy = emuY - defenseY;
-						const distance = Math.sqrt(dx * dx + dy * dy);
+						const dx = emuShape.x() - defenseX;
+						const dy = emuShape.y() - defenseY;
+						const dist = Math.sqrt(dx * dx + dy * dy);
 
-						if (distance < nearestDistance) {
-							nearestEmu = emu;
-							nearestDistance = distance;
+						if (dist < closestDist) {
+							closestEmu = emu;
+							closestDist = dist;
 						}
 					}
 
-					if (nearestEmu && nearestDistance <= 100) {
-						nearestEmu.remove();
-						emusToRemove.push(nearestEmu);
+					if (closestEmu && closestDist <= 100) {
+						closestEmu.remove();
+						emusToRemove.push(closestEmu);
 						defense.takeDamage(1);
-						machineGunCooldowns.set(defense, cooldown);
+						gunCooldowns.set(defense, 0.5);
 						if (!defense.isActive()) {
 							defense.remove();
 						}
 					}
 				} else {
-					machineGunCooldowns.set(defense, Math.max(0, lastShot - deltaTime));
+					gunCooldowns.set(defense, Math.max(0, lastShot - deltaTime));
 				}
 				continue;
 			}
@@ -778,42 +771,30 @@ export class FarmScreenController extends ScreenController {
 
 				const emuX = emuShape.x();
 				const emuY = emuShape.y();
-				const emuWidth = emuShape.width();
-				const emuHeight = emuShape.height();
+				const emuW = emuShape.width();
+				const emuH = emuShape.height();
 
-				const isColliding = (
-					emuX < defenseX + defenseSize &&
-					emuX + emuWidth > defenseX &&
-					emuY < defenseY + defenseSize &&
-					emuY + emuHeight > defenseY
-				);
-
-				if (!isColliding) continue;
-
-				switch (defenseType) {
-					case "barbed_wire":
+				if (emuX < defenseX + defenseSize && emuX + emuW > defenseX &&
+					emuY < defenseY + defenseSize && emuY + emuH > defenseY) {
+					
+					if (defenseType === "barbed_wire") {
 						emu.setSpeedModifier(0.3);
-						break;
-
-					case "sandbag":
+					} else if (defenseType === "sandbag") {
 						emu.setBlocked(true);
 						defense.takeDamage(1 * deltaTime);
 						if (!defense.isActive()) {
 							defense.remove();
 							emu.setBlocked(false);
 						}
-						break;
-
-					case "mine":
-						break;
+					}
 				}
 			}
 		}
 
 		for (const emu of emusToRemove) {
-			const index = this.emus.indexOf(emu);
-			if (index > -1) {
-				this.emus.splice(index, 1);
+			const idx = this.emus.indexOf(emu);
+			if (idx > -1) {
+				this.emus.splice(idx, 1);
 			}
 		}
 
